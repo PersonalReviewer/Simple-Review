@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QComboBox,
+    QInputDialog,
     QScrollArea,
     QSplitter,
     QTabWidget,
@@ -167,13 +168,21 @@ class MainWindow(QMainWindow):
         self.review_tree.itemActivated.connect(self._open_library_item)
         self.review_tree.currentItemChanged.connect(lambda current, _previous: self._open_library_item(current))
 
-        self.category_box = QLineEdit()
-        self.category_box.setPlaceholderText("Category/folder for current review")
-        set_category_button = QPushButton("Set Folder")
-        set_category_button.clicked.connect(self._set_current_category)
+        folder_label = QLabel("Current folder")
+        folder_label.setStyleSheet("font-weight: 700;")
+        self.category_combo = QComboBox()
+        self.category_combo.setEditable(True)
+        self.category_combo.setPlaceholderText("Choose or type folder…")
+        self.category_combo.setToolTip("Pick an existing folder or type a new one, then click Move.")
+        move_category_button = QPushButton("Move")
+        move_category_button.setToolTip("Move the current review to the selected folder.")
+        move_category_button.clicked.connect(self._set_current_category)
+        new_category_button = QPushButton("New Folder…")
+        new_category_button.clicked.connect(self._create_category)
         category_row = QHBoxLayout()
-        category_row.addWidget(self.category_box)
-        category_row.addWidget(set_category_button)
+        category_row.addWidget(self.category_combo, 1)
+        category_row.addWidget(move_category_button)
+        category_row.addWidget(new_category_button)
 
         new_button = QPushButton("Create Review")
         new_button.clicked.connect(self._new_review)
@@ -191,6 +200,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(container)
         layout.addWidget(self.search_box)
         layout.addWidget(self.review_tree, 1)
+        layout.addWidget(folder_label)
         layout.addLayout(category_row)
         layout.addLayout(buttons)
         dock.setWidget(container)
@@ -450,7 +460,7 @@ class MainWindow(QMainWindow):
         current_id = self.view_model.current_review.id
         self.review_tree.blockSignals(True)
         self.review_tree.clear()
-        self.category_box.setText(self.view_model.current_review.category)
+        self._refresh_category_combo(reviews)
         grouped: dict[str, list[Review]] = {}
         for review in reviews:
             grouped.setdefault(review.category or "Uncategorized", []).append(review)
@@ -475,6 +485,18 @@ class MainWindow(QMainWindow):
             self.review_tree.addTopLevelItem(item)
         self.review_tree.blockSignals(False)
 
+    def _refresh_category_combo(self, reviews: list[Review]) -> None:
+        """Refresh folder/category options without losing the current value."""
+        current_category = self.view_model.current_review.category or "Uncategorized"
+        categories = sorted({"Uncategorized", current_category, *(review.category or "Uncategorized" for review in reviews)})
+        self.category_combo.blockSignals(True)
+        self.category_combo.clear()
+        self.category_combo.addItems(categories)
+        index = self.category_combo.findText(current_category)
+        self.category_combo.setCurrentIndex(max(index, 0))
+        self.category_combo.setEditText(current_category)
+        self.category_combo.blockSignals(False)
+
     def _open_library_item(self, item: QTreeWidgetItem | None) -> None:
         """Open an item from the review library."""
         if item is None:
@@ -496,10 +518,24 @@ class MainWindow(QMainWindow):
 
     def _set_current_category(self) -> None:
         """Update the folder/category for the current review."""
-        category = self.category_box.text().strip() or "Uncategorized"
+        category = self.category_combo.currentText().strip() or "Uncategorized"
         self.view_model.set_current_category(category)
         self._refresh_library(select_current=True)
         self.statusBar().showMessage(f"Review moved to folder: {category}", 2500)
+
+    def _create_category(self) -> None:
+        """Prompt for a new folder/category and move the current review there."""
+        category, accepted = QInputDialog.getText(
+            self,
+            "New Review Folder",
+            "Folder name:",
+            text=self.category_combo.currentText().strip() or "Uncategorized",
+        )
+        if not accepted:
+            return
+        clean_category = category.strip() or "Uncategorized"
+        self.category_combo.setEditText(clean_category)
+        self._set_current_category()
 
     def _new_review(self) -> None:
         """Create a new review and focus the first field."""
