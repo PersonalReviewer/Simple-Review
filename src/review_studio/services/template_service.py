@@ -24,3 +24,15 @@ class TemplateService:
     def templates(self) -> list[ReviewTemplate]:
         """Return available templates."""
         return self.engine.available_templates()
+
+    def refresh(self) -> None:
+        """Reload templates from disk."""
+        self.engine.refresh()
+
+    def save_custom_template(self, template: ReviewTemplate) -> None:
+        """Save a custom template profile."""
+        self.engine.save_custom_template(template)
+
+    def delete_custom_template(self, template_id: str) -> None:
+        """Delete a custom template profile."""
+        self.engine.delete_custom_template(template_id)

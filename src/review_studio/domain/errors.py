@@ -21,3 +21,7 @@ class ExportError(ReviewStudioError):
 
 class ValidationError(ReviewStudioError):
     """Raised when review data is invalid for a workflow."""
+
+
+class ImageProcessingError(ReviewStudioError):
+    """Raised when image metadata cleanup fails."""

@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from review_studio.exporters.export_service import ExportService
+from review_studio.services.image_metadata_service import ImageMetadataService
 from review_studio.services.review_service import ReviewService
 from review_studio.services.template_service import TemplateService
 from review_studio.storage.repository import ReviewRepository
@@ -33,6 +34,7 @@ class ApplicationServices:
     template_service: TemplateService
     review_service: ReviewService
     export_service: ExportService
+    image_metadata_service: ImageMetadataService
 
 
 def create_services() -> ApplicationServices:
@@ -43,4 +45,5 @@ def create_services() -> ApplicationServices:
         template_service=TemplateService(template_engine),
         review_service=ReviewService(ReviewRepository(), SettingsStore()),
         export_service=ExportService(template_engine),
+        image_metadata_service=ImageMetadataService(),
     )

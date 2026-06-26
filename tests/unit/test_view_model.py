@@ -58,6 +58,20 @@ class ViewModelTests(unittest.TestCase):
             self.assertEqual(service.repository.root, new_library)
             self.assertTrue(new_library.exists())
 
+    def test_review_category_round_trip_and_search(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            engine = TemplateEngine()
+            service = ReviewService(ReviewRepository(root / "reviews"), SettingsStore(root / "settings.json"))
+            view_model = MainViewModel(service, TemplateService(engine), ExportService(engine))
+
+            view_model.set_current_category("Vendors")
+            review_id = view_model.current_review.id
+            loaded = service.repository.load(review_id)
+
+            self.assertEqual(loaded.category, "Vendors")
+            self.assertEqual(service.search_reviews("vendors")[0].id, review_id)
+
 
 if __name__ == "__main__":
     unittest.main()

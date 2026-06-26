@@ -23,6 +23,7 @@ def run_gui(argv: list[str] | None = None) -> int:
         review_service=services.review_service,
         template_service=services.template_service,
         export_service=services.export_service,
+        image_metadata_service=services.image_metadata_service,
     )
     apply_theme(app, view_model.settings.theme, view_model.settings.font_size)
     window = MainWindow(view_model)

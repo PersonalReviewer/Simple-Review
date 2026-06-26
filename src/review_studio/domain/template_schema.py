@@ -65,6 +65,15 @@ class RatingOption:
             description=str(data.get("description", "")),
         )
 
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize a rating option to JSON-compatible data."""
+        return {
+            "value": self.value,
+            "name": self.name,
+            "color": self.color,
+            "description": self.description,
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class TemplateField:
@@ -98,6 +107,25 @@ class TemplateField:
             rating_scale=str(data.get("rating_scale", "standard")),
         )
 
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize a field definition to JSON-compatible data."""
+        data: dict[str, Any] = {
+            "key": self.key,
+            "label": self.label,
+            "type": self.field_type.value,
+        }
+        if self.namespace is not FieldNamespace.VALUE:
+            data["namespace"] = self.namespace.value
+        if self.options:
+            data["options"] = list(self.options)
+        if self.required:
+            data["required"] = self.required
+        if self.placeholder:
+            data["placeholder"] = self.placeholder
+        if self.rating_scale != "standard":
+            data["rating_scale"] = self.rating_scale
+        return data
+
 
 @dataclass(frozen=True, slots=True)
 class TemplateSection:
@@ -113,6 +141,10 @@ class TemplateSection:
             title=str(data["title"]),
             fields=tuple(TemplateField.from_dict(field_data) for field_data in data.get("fields", [])),
         )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize a section to JSON-compatible data."""
+        return {"title": self.title, "fields": [field.to_dict() for field in self.fields]}
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,6 +181,36 @@ class ReviewTemplate:
             if normalized in scale:
                 return scale[normalized]
         return self.rating_option_for(value).description
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize a review template to JSON-compatible data."""
+        data: dict[str, Any] = {
+            "id": self.id,
+            "name": self.name,
+            "version": self.version,
+            "description": self.description,
+            "default_format": self.default_format,
+            "rating_options": [option.to_dict() for option in self.rating_options],
+            "sections": [section.to_dict() for section in self.sections],
+            "body": self.body,
+        }
+        if self.rating_scales:
+            data["rating_scales"] = self.rating_scales
+        return data
+
+    def with_identity(self, template_id: str, name: str) -> ReviewTemplate:
+        """Return a copy with a different id/name for custom profiles."""
+        return ReviewTemplate(
+            id=template_id,
+            name=name,
+            description=self.description,
+            default_format=self.default_format,
+            sections=self.sections,
+            rating_options=self.rating_options,
+            body=self.body,
+            version=self.version,
+            rating_scales=self.rating_scales,
+        )
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ReviewTemplate:

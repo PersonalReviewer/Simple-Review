@@ -107,6 +107,7 @@ class Review:
     customer_service_information: str = ""
     summary: str = ""
     template_id: str = "default_review"
+    category: str = "Uncategorized"
     values: dict[str, str] = field(default_factory=dict)
     rating_values: dict[str, str] = field(default_factory=dict)
     comments: dict[str, str] = field(default_factory=dict)
@@ -187,6 +188,7 @@ class Review:
             "customer_service_information": self.customer_service_information,
             "summary": self.summary,
             "template_id": self.template_id,
+            "category": self.category,
             "values": dict(self.values),
             "rating_values": dict(self.rating_values),
             "comments": dict(self.comments),
@@ -219,6 +221,7 @@ class Review:
             customer_service_information=str(data.get("customer_service_information", "")),
             summary=str(data.get("summary", "")),
             template_id=str(data.get("template_id", "default_review")),
+            category=str(data.get("category", "Uncategorized") or "Uncategorized"),
             values={str(key): str(value) for key, value in dict(data.get("values", {})).items()},
             rating_values={str(key): str(value) for key, value in dict(data.get("rating_values", {})).items()},
             comments={str(key): str(value) for key, value in dict(data.get("comments", {})).items()},

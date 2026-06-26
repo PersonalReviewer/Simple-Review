@@ -18,6 +18,10 @@ The goal is simple: make reviews consistent, readable, backed up, and easier to 
 - Uses template files instead of hardcoding the review format into the GUI
 - Keeps rating recommendations inside the editor, not in the final post
 - Supports dark/light theme settings
+- Removes EXIF/common image metadata locally by re-encoding fresh pixel-only files before posting images
+- Lets you clone, edit, save, delete, and switch template profiles
+- Organizes reviews into collapsible local folders/categories
+- Optional experimental Imgur upload after metadata removal, disabled by default
 
 ## Current default review format
 
@@ -146,6 +150,20 @@ Important parts:
 - `review_studio.storage.repository` — local JSON review library
 - `review_studio.exporters.export_service` — BBCode/Markdown/HTML/text/JSON export
 
+## Image metadata remover
+
+Use **Tools → Remove Image Metadata** to process images locally before posting them.
+
+Supported output modes:
+
+- overwrite originals
+- same folder with a suffix such as `_clean`
+- a separate output folder with the same file names
+
+The scrubber re-encodes images into fresh image objects from pixel data, dropping EXIF, PNG text chunks, and common container metadata that Pillow exposes. Supported formats are JPEG, PNG, WebP, TIFF, BMP, and GIF. Review Studio uses Pillow and does not upload images or call platform-specific tools unless the experimental Imgur option is explicitly enabled.
+
+Experimental Imgur upload is off by default, requires your own Imgur Client ID, and is labeled as not recommended for privacy-sensitive use. The UI includes an **Onion Providers** popup with copy-friendly provider links for manual use instead. Clean locally first, then upload only if you choose to.
+
 ## Template system
 
 The editor is generated from JSON templates. The default template is here:
@@ -164,7 +182,9 @@ Templates define:
 - rating guidance scales
 - BBCode/Jinja output body
 
-User templates can be added without changing Python code by placing JSON templates in:
+Use **Tools → Template Profiles** to switch profiles, clone the bundled profile, edit JSON, save custom profiles, or delete custom profiles.
+
+User templates can also be added without changing Python code by placing JSON templates in:
 
 ```text
 <app data directory>/templates/
@@ -178,6 +198,10 @@ Template variables include plain values, ratings, and comments:
 {{ rating.quality }}
 {{ comment.quality }}
 ```
+
+## Review folders
+
+The review library groups saved reviews into collapsible folders/categories. Set the folder name from the library panel to keep different review types, vendors, or markets separated without creating separate databases.
 
 ## Data storage
 

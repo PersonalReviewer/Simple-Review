@@ -16,8 +16,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QListWidget,
-    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QPlainTextEdit,
@@ -29,6 +27,8 @@ from PySide6.QtWidgets import (
     QTextBrowser,
     QTextEdit,
     QToolBar,
+    QTreeWidget,
+    QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -36,7 +36,9 @@ from PySide6.QtWidgets import (
 from review_studio.domain.models import Review
 from review_studio.domain.template_schema import FieldType, TemplateField
 from review_studio.exporters.export_service import ExportFormat
+from review_studio.gui.exif_cleaner_dialog import ExifCleanerDialog
 from review_studio.gui.settings_dialog import SettingsDialog
+from review_studio.gui.template_manager_dialog import TemplateManagerDialog
 from review_studio.gui.theme import apply_theme
 from review_studio.gui.view_models.main_view_model import MainViewModel
 from review_studio.preview.renderer import PreviewRenderer
@@ -73,6 +75,14 @@ class MainWindow(QMainWindow):
         self.new_action = QAction("New Review", self)
         self.new_action.setShortcut(QKeySequence.StandardKey.New)
         self.new_action.triggered.connect(self._new_review)
+
+        self.exif_cleaner_action = QAction("Remove Image Metadata…", self)
+        self.exif_cleaner_action.setShortcut(QKeySequence("Ctrl+Shift+M"))
+        self.exif_cleaner_action.triggered.connect(self._open_exif_cleaner)
+
+        self.template_manager_action = QAction("Template Profiles…", self)
+        self.template_manager_action.setShortcut(QKeySequence("Ctrl+Shift+T"))
+        self.template_manager_action.triggered.connect(self._open_template_manager)
 
         self.save_action = QAction("Save", self)
         self.save_action.setShortcut(QKeySequence.StandardKey.Save)
@@ -127,6 +137,10 @@ class MainWindow(QMainWindow):
         review_menu.addAction(self.duplicate_action)
         review_menu.addAction(self.delete_action)
 
+        tools_menu = self.menuBar().addMenu("Tools")
+        tools_menu.addAction(self.exif_cleaner_action)
+        tools_menu.addAction(self.template_manager_action)
+
     def _build_toolbar(self) -> None:
         """Create the primary toolbar."""
         toolbar = QToolBar("Main")
@@ -137,6 +151,7 @@ class MainWindow(QMainWindow):
         toolbar.addAction(self.duplicate_action)
         toolbar.addAction(self.copy_action)
         toolbar.addAction(self.export_action)
+        toolbar.addAction(self.exif_cleaner_action)
 
     def _build_library_dock(self) -> None:
         """Create review library/search navigation."""
@@ -147,9 +162,18 @@ class MainWindow(QMainWindow):
         self.search_box.setPlaceholderText("Search reviews…")
         self.search_box.textChanged.connect(self._refresh_library)
 
-        self.review_list = QListWidget()
-        self.review_list.itemActivated.connect(self._open_library_item)
-        self.review_list.currentItemChanged.connect(lambda current, _previous: self._open_library_item(current))
+        self.review_tree = QTreeWidget()
+        self.review_tree.setHeaderHidden(True)
+        self.review_tree.itemActivated.connect(self._open_library_item)
+        self.review_tree.currentItemChanged.connect(lambda current, _previous: self._open_library_item(current))
+
+        self.category_box = QLineEdit()
+        self.category_box.setPlaceholderText("Category/folder for current review")
+        set_category_button = QPushButton("Set Folder")
+        set_category_button.clicked.connect(self._set_current_category)
+        category_row = QHBoxLayout()
+        category_row.addWidget(self.category_box)
+        category_row.addWidget(set_category_button)
 
         new_button = QPushButton("Create Review")
         new_button.clicked.connect(self._new_review)
@@ -166,7 +190,8 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.addWidget(self.search_box)
-        layout.addWidget(self.review_list, 1)
+        layout.addWidget(self.review_tree, 1)
+        layout.addLayout(category_row)
         layout.addLayout(buttons)
         dock.setWidget(container)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
@@ -423,28 +448,41 @@ class MainWindow(QMainWindow):
         query = self.search_box.text() if hasattr(self, "search_box") else ""
         reviews = self.view_model.search_reviews(query)
         current_id = self.view_model.current_review.id
-        self.review_list.blockSignals(True)
-        self.review_list.clear()
+        self.review_tree.blockSignals(True)
+        self.review_tree.clear()
+        self.category_box.setText(self.view_model.current_review.category)
+        grouped: dict[str, list[Review]] = {}
         for review in reviews:
-            item = QListWidgetItem(review.display_title())
-            item.setData(Qt.ItemDataRole.UserRole, review.id)
-            vendor = review.values.get("vendor_name", review.vendor)
-            product = review.values.get("product_name", review.product)
-            item.setToolTip(f"Updated: {review.updated_at}\nVendor: {vendor}\nProduct: {product}")
-            self.review_list.addItem(item)
-            if select_current and review.id == current_id:
-                self.review_list.setCurrentItem(item)
+            grouped.setdefault(review.category or "Uncategorized", []).append(review)
+        for category in sorted(grouped):
+            folder_item = QTreeWidgetItem([f"📁 {category} ({len(grouped[category])})"])
+            folder_item.setData(0, Qt.ItemDataRole.UserRole, "")
+            self.review_tree.addTopLevelItem(folder_item)
+            folder_item.setExpanded(True)
+            for review in grouped[category]:
+                item = QTreeWidgetItem([review.display_title()])
+                item.setData(0, Qt.ItemDataRole.UserRole, review.id)
+                vendor = review.values.get("vendor_name", review.vendor)
+                product = review.values.get("product_name", review.product)
+                item.setToolTip(0, f"Updated: {review.updated_at}\nFolder: {review.category}\nVendor: {vendor}\nProduct: {product}")
+                folder_item.addChild(item)
+                if select_current and review.id == current_id:
+                    self.review_tree.setCurrentItem(item)
         if not reviews:
-            item = QListWidgetItem("No reviews found")
+            item = QTreeWidgetItem(["No reviews found"])
+            item.setData(0, Qt.ItemDataRole.UserRole, "")
             item.setFlags(Qt.ItemFlag.NoItemFlags)
-            self.review_list.addItem(item)
-        self.review_list.blockSignals(False)
+            self.review_tree.addTopLevelItem(item)
+        self.review_tree.blockSignals(False)
 
-    def _open_library_item(self, item: QListWidgetItem | None) -> None:
+    def _open_library_item(self, item: QTreeWidgetItem | None) -> None:
         """Open an item from the review library."""
         if item is None:
             return
-        review_id = str(item.data(Qt.ItemDataRole.UserRole))
+        review_id = str(item.data(0, Qt.ItemDataRole.UserRole) or "")
+        if not review_id:
+            item.setExpanded(not item.isExpanded())
+            return
         if review_id == self.view_model.current_review.id:
             return
         self._autosave()
@@ -455,6 +493,13 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             LOGGER.exception("Could not open review")
             QMessageBox.warning(self, "Open Review Failed", str(exc))
+
+    def _set_current_category(self) -> None:
+        """Update the folder/category for the current review."""
+        category = self.category_box.text().strip() or "Uncategorized"
+        self.view_model.set_current_category(category)
+        self._refresh_library(select_current=True)
+        self.statusBar().showMessage(f"Review moved to folder: {category}", 2500)
 
     def _new_review(self) -> None:
         """Create a new review and focus the first field."""
@@ -503,6 +548,30 @@ class MainWindow(QMainWindow):
         if isinstance(app, QApplication):
             apply_theme(app, settings.theme, settings.font_size)
         self.statusBar().showMessage("Settings saved", 2500)
+
+    def _open_exif_cleaner(self) -> None:
+        """Open the local image metadata removal workflow."""
+        dialog = ExifCleanerDialog(self.view_model.image_metadata_service, self)
+        dialog.exec()
+
+    def _open_template_manager(self) -> None:
+        """Open template profile manager and switch the active profile if requested."""
+        dialog = TemplateManagerDialog(
+            self.view_model.template_service,
+            self.view_model.current_review.template_id,
+            self,
+        )
+        if dialog.exec() != TemplateManagerDialog.DialogCode.Accepted:
+            return
+        try:
+            self.view_model.switch_template(dialog.selected_template_id)
+            self._build_central_editor()
+            self._populate_form(self.view_model.current_review)
+            self._refresh_preview(save=True)
+            self.statusBar().showMessage(f"Template profile switched to {dialog.selected_template_id}", 3000)
+        except Exception as exc:
+            LOGGER.exception("Template switch failed")
+            QMessageBox.critical(self, "Template Switch Failed", str(exc))
 
     def _undo(self) -> None:
         """Run undo on the focused editor widget when supported."""

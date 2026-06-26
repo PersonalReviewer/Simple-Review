@@ -54,6 +54,8 @@ The library panel lets you:
 
 - Search previous reviews
 - Open old reviews
+- Group reviews into collapsible folders/categories
+- Rename the current review folder/category from the library panel
 - Duplicate reviews
 - Delete reviews
 - Create new reviews
@@ -77,6 +79,41 @@ with the same `id` can override a bundled template.
 Template fields are rendered automatically in the editor; no GUI code changes are needed for
 new template sections or fields.
 
+## Image Metadata Removal
+
+Use **Tools → Remove Image Metadata** to strip EXIF/common metadata from images before sharing them. The scrubber re-encodes fresh image files from pixel data to avoid carrying forward EXIF, PNG text chunks, and common metadata containers exposed by Pillow.
+
+Output choices:
+
+- **Overwrite originals:** replaces the selected images after writing through a temporary file.
+- **Same folder, new name:** writes cleaned copies next to originals using a suffix like `_clean`.
+- **New folder, same names:** writes cleaned copies into a folder you choose.
+
+All processing is local by default. No image is uploaded by Review Studio unless you explicitly enable the experimental Imgur option and provide an Imgur Client ID.
+
+### Experimental Imgur Upload
+
+The Imgur option is disabled by default and is marked as not recommended for privacy-sensitive use. When enabled, Review Studio cleans the image first, then uploads the cleaned file using anonymous Imgur API access with your Client ID. Failed uploads are reported per file.
+
+Use the **Onion Providers** button to open a copy-friendly popup with manual onion image provider options:
+
+- DeadDrop - `http://deaddrop3m4nxdjueza5vgebsruydayytjy2lf3vj5eqmywtdv7fcrqd.onion/`
+- ImageGirl - `http://apig2yathivs562p4gkgtpe4azrqlgxohopsgddrkjxkegkxdt75wqqd.onion/`
+- Black Cloud - `http://bcloudwenjxgcxjh6uheyt72a5isimzgg4kv5u74jb2s22y3hzpwh6id.onion`
+
+Review Studio does not open or upload to onion providers automatically; the list is provided for manual copy/paste.
+
+## Template Profiles
+
+Use **Tools → Template Profiles** to manage review formats. You can:
+
+- switch the active profile
+- clone the bundled default profile
+- edit/save custom JSON profiles
+- delete custom profiles
+
+The bundled `default_review` profile is protected. Clone it before editing.
+
 ## Export
 
 Supported export formats:
@@ -98,4 +135,6 @@ Use **Export** or `Ctrl+E`.
 - `Ctrl+Shift+C`: copy generated preview
 - `Ctrl+Z` / `Ctrl+Y`: undo/redo in the focused editor
 - `Ctrl+,`: settings
+- `Ctrl+Shift+M`: remove image metadata
+- `Ctrl+Shift+T`: template profiles
 - `Ctrl+Delete`: delete review

@@ -31,6 +31,7 @@ dependencies = [
   "platformdirs>=4.2",
   "pydantic>=2.7",
   "PySide6>=6.7",
+  "Pillow>=10.0",
 ]
 
 [project.optional-dependencies]
@@ -42,6 +43,7 @@ dev = [
 ]
 gui = [
   "PySide6>=6.7",
+  "Pillow>=10.0",
 ]
 templates = [
   "Jinja2>=3.1",

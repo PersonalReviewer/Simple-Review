@@ -18,6 +18,7 @@ class TemplateEngine:
     """Render reviews with bundled or future external Jinja templates."""
 
     def __init__(self, custom_template_dirs: list[Path] | None = None) -> None:
+        self._custom_template_dirs = custom_template_dirs or [app_data_dir() / "templates"]
         self._environment = Environment(
             autoescape=False,
             trim_blocks=True,
@@ -25,7 +26,17 @@ class TemplateEngine:
             undefined=StrictUndefined,
         )
         self._templates = self._load_builtin_templates()
-        self._load_custom_templates(custom_template_dirs or [app_data_dir() / "templates"])
+        self._load_custom_templates(self._custom_template_dirs)
+
+    @property
+    def custom_template_dir(self) -> Path:
+        """Return the primary custom template directory."""
+        return self._custom_template_dirs[0]
+
+    def refresh(self) -> None:
+        """Reload bundled and custom templates from disk."""
+        self._templates = self._load_builtin_templates()
+        self._load_custom_templates(self._custom_template_dirs)
 
     def available_templates(self) -> list[ReviewTemplate]:
         """Return all registered templates."""
@@ -43,6 +54,25 @@ class TemplateEngine:
             return template.render(**review.template_context(selected)).strip() + "\n"
         except JinjaTemplateError as exc:
             raise TemplateError(f"Could not render template '{selected.id}': {exc}") from exc
+
+    def save_custom_template(self, template: ReviewTemplate) -> Path:
+        """Persist a custom template profile as JSON."""
+        if template.id == "default_review":
+            raise TemplateError("The bundled default_review template cannot be overwritten")
+        self.custom_template_dir.mkdir(parents=True, exist_ok=True)
+        path = self.custom_template_dir / f"{template.id}.json"
+        path.write_text(json.dumps(template.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        self.refresh()
+        return path
+
+    def delete_custom_template(self, template_id: str) -> None:
+        """Delete a custom template profile if it exists."""
+        if template_id == "default_review":
+            raise TemplateError("The bundled default_review template cannot be deleted")
+        path = self.custom_template_dir / f"{template_id}.json"
+        if path.exists():
+            path.unlink()
+        self.refresh()
 
     def _load_builtin_templates(self) -> dict[str, ReviewTemplate]:
         """Load bundled JSON template definitions from package data."""

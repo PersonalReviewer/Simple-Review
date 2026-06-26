@@ -67,3 +67,6 @@ The renderer converts the selected rating to formatted BBCode.
 
 Adding sections or fields to a JSON template should not require Python code changes. Python
 changes are only needed for new field types or new rendering behavior.
+## Template Profiles UI
+
+Use **Tools → Template Profiles** to clone the bundled template into a custom profile, edit JSON, save it, and switch the active review profile. Custom templates are stored in the app data templates directory and are loaded after bundled templates.

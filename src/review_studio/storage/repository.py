@@ -78,6 +78,7 @@ class ReviewRepository:
                     review.vendor,
                     review.market,
                     review.product,
+                    review.category,
                     review.summary,
                     review.vendor_comments,
                     review.product_comments,

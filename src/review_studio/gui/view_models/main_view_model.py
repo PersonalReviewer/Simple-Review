@@ -14,6 +14,7 @@ from review_studio.domain.models import RatingField, Review
 from review_studio.domain.template_schema import FieldNamespace, ReviewTemplate, TemplateField
 from review_studio.domain.value_objects import RatingValue, parse_rating
 from review_studio.exporters.export_service import ExportFormat, ExportService
+from review_studio.services.image_metadata_service import ImageMetadataService
 from review_studio.services.review_service import ReviewService
 from review_studio.services.template_service import TemplateService
 from review_studio.storage.settings import UserSettings
@@ -27,10 +28,12 @@ class MainViewModel:
         review_service: ReviewService,
         template_service: TemplateService,
         export_service: ExportService,
+        image_metadata_service: ImageMetadataService | None = None,
     ) -> None:
         self.review_service = review_service
         self.template_service = template_service
         self.export_service = export_service
+        self.image_metadata_service = image_metadata_service or ImageMetadataService()
         self.settings = review_service.settings
         self.current_review = self._restore_or_create_review()
 
@@ -96,6 +99,19 @@ class MainViewModel:
         self.current_review.set_field_value(field.namespace, field.key, value)
         if field.key in {"vendor_name", "product_name"}:
             self.current_review.title = self._automatic_title()
+
+    def switch_template(self, template_id: str) -> None:
+        """Switch the current review and default setting to a template profile."""
+        self.template_service.get_template(template_id)
+        self.current_review.template_id = template_id
+        self.settings.default_template_id = template_id
+        self.review_service.save_settings(self.settings)
+        self.save_current_review()
+
+    def set_current_category(self, category: str) -> None:
+        """Move the current review into a library category/folder."""
+        self.current_review.category = category.strip() or "Uncategorized"
+        self.save_current_review()
 
     def template_field_value(self, field: TemplateField) -> str:
         """Return the current value for a template-defined field."""
