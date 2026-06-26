@@ -160,7 +160,7 @@ Supported output modes:
 - same folder with a suffix such as `_clean`
 - a separate output folder with the same file names
 
-The scrubber re-encodes images into fresh image objects from pixel data, dropping EXIF, PNG text chunks, and common container metadata that Pillow exposes. Supported formats are JPEG, PNG, WebP, TIFF, BMP, and GIF. Review Studio uses Pillow and does not upload images or call platform-specific tools unless the experimental Imgur option is explicitly enabled.
+When ImageMagick is available, the scrubber uses ImageMagick `-strip` behavior for parity with `mogrify -strip`; otherwise it falls back to re-encoding images into fresh image objects from pixel data, dropping EXIF, PNG text chunks, and common container metadata that Pillow exposes. Supported formats are JPEG, PNG, WebP, TIFF, BMP, and GIF. Review Studio uses Pillow and does not upload images or call platform-specific tools unless the experimental Imgur option is explicitly enabled.
 
 Experimental Imgur upload is off by default, requires your own Imgur Client ID, and is labeled as not recommended for privacy-sensitive use. The UI includes an **Onion Providers** popup with copy-friendly provider links for manual use instead. Clean locally first, then upload only if you choose to.
 

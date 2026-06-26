@@ -113,6 +113,16 @@ class MainViewModel:
         self.current_review.category = category.strip() or "Uncategorized"
         self.save_current_review()
 
+    def move_review_to_category(self, review_id: str, category: str) -> None:
+        """Move any saved review into a category/folder."""
+        clean_category = category.strip() or "Uncategorized"
+        if review_id == self.current_review.id:
+            self.set_current_category(clean_category)
+            return
+        review = self.review_service.repository.load(review_id)
+        review.category = clean_category
+        self.review_service.save_review(review)
+
     def template_field_value(self, field: TemplateField) -> str:
         """Return the current value for a template-defined field."""
         return self.current_review.field_value(field.namespace, field.key)

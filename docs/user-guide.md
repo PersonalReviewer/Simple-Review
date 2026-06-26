@@ -55,6 +55,8 @@ The library panel lets you:
 - Search previous reviews
 - Open old reviews
 - Group reviews into collapsible folders/categories
+- Drag reviews into folder rows to move them
+- Click folder arrows to collapse/expand review groups
 - Rename the current review folder/category from the library panel
 - Duplicate reviews
 - Delete reviews
@@ -81,7 +83,7 @@ new template sections or fields.
 
 ## Image Metadata Removal
 
-Use **Tools → Remove Image Metadata** to strip EXIF/common metadata from images before sharing them. The scrubber re-encodes fresh image files from pixel data to avoid carrying forward EXIF, PNG text chunks, and common metadata containers exposed by Pillow.
+Use **Tools → Remove Image Metadata** to strip EXIF/common metadata from images before sharing them. When ImageMagick is installed, the scrubber uses ImageMagick `-strip` behavior for parity with `mogrify -strip`. If ImageMagick is not available, it falls back to re-encoding fresh image files from pixel data to avoid carrying forward EXIF, PNG text chunks, and common metadata containers exposed by Pillow.
 
 Output choices:
 

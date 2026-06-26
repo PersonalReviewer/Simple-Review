@@ -10,6 +10,8 @@ from __future__ import annotations
 import base64
 import json
 import os
+import shutil
+import subprocess
 import tempfile
 import urllib.error
 import urllib.parse
@@ -40,6 +42,7 @@ class ImageCleanupOptions:
     output_folder: Path | None = None
     upload_to_imgur: bool = False
     imgur_client_id: str = ""
+    prefer_image_magick: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,6 +99,7 @@ class ImageMetadataService:
         destination.parent.mkdir(parents=True, exist_ok=True)
 
         try:
+            used_backend = "Pillow pixel re-encode"
             if options.output_mode is ImageOutputMode.OVERWRITE:
                 with tempfile.NamedTemporaryFile(
                     delete=False,
@@ -104,19 +108,19 @@ class ImageMetadataService:
                 ) as temporary:
                     temp_path = Path(temporary.name)
                 try:
-                    self._write_clean_image(source, temp_path)
+                    used_backend = self._write_clean_image(source, temp_path, options)
                     os.replace(temp_path, source)
                 finally:
                     temp_path.unlink(missing_ok=True)
             else:
-                self._write_clean_image(source, destination)
+                used_backend = self._write_clean_image(source, destination, options)
         except UnidentifiedImageError as exc:
             raise ImageProcessingError(f"Could not identify image: {source}") from exc
         except OSError as exc:
             raise ImageProcessingError(f"Could not process image {source}: {exc}") from exc
 
         uploaded_url = ""
-        message = "metadata removed"
+        message = f"metadata removed via {used_backend}"
         if options.upload_to_imgur:
             uploaded_url = self.upload_to_imgur(destination, options.imgur_client_id)
             message = f"metadata removed; uploaded to {uploaded_url}"
@@ -141,13 +145,16 @@ class ImageMetadataService:
             raise ImageProcessingError("Output folder is required for output-folder mode")
         return options.output_folder.expanduser() / source.name
 
-    def _write_clean_image(self, source: Path, destination: Path) -> None:
+    def _write_clean_image(self, source: Path, destination: Path, options: ImageCleanupOptions) -> str:
         """Write image pixel data without EXIF/text metadata."""
+        if options.prefer_image_magick and self._write_with_image_magick(source, destination):
+            return "ImageMagick -strip"
+
         with Image.open(source) as image:
             image_format = image.format or self._format_from_suffix(destination)
             if getattr(image, "is_animated", False):
                 self._write_animated_clean_image(image, destination, image_format)
-                return
+                return "Pillow pixel re-encode"
 
             cleaned = ImageOps.exif_transpose(image)
             cleaned.load()
@@ -155,6 +162,23 @@ class ImageMetadataService:
             cleaned = self._normalized_for_format(cleaned, image_format)
             save_kwargs = self._save_kwargs(image_format)
             cleaned.save(destination, format=image_format, **save_kwargs)
+        return "Pillow pixel re-encode"
+
+    def _write_with_image_magick(self, source: Path, destination: Path) -> bool:
+        """Use ImageMagick's strip behavior when available.
+
+        This gives users parity with the common ``mogrify -strip`` workflow while
+        keeping Pillow as the cross-platform fallback when ImageMagick is absent.
+        """
+        executable = shutil.which("magick") or shutil.which("convert")
+        if executable is None:
+            return False
+        command = [executable, str(source), "-auto-orient", "-strip", str(destination)]
+        try:
+            subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except (OSError, subprocess.CalledProcessError):
+            return False
+        return destination.exists()
 
     def _write_animated_clean_image(self, image: Image.Image, destination: Path, image_format: str) -> None:
         """Write animated images without carrying over metadata containers."""

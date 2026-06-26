@@ -6,8 +6,9 @@ import logging
 from pathlib import Path
 
 from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence
+from PySide6.QtGui import QAction, QCloseEvent, QDropEvent, QKeySequence
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QApplication,
     QDockWidget,
     QFileDialog,
@@ -46,6 +47,45 @@ from review_studio.preview.renderer import PreviewRenderer
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+class ReviewLibraryTree(QTreeWidget):
+    """Review tree with first-class drag/drop folder moves."""
+
+    def __init__(self, window: MainWindow) -> None:
+        super().__init__(window)
+        self._window = window
+        self.setHeaderHidden(True)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        """Move a review into the folder it was dropped on."""
+        dragged = self.currentItem()
+        if dragged is None:
+            event.ignore()
+            return
+        review_id = str(dragged.data(0, Qt.ItemDataRole.UserRole) or "")
+        if not review_id:
+            event.ignore()
+            return
+
+        target = self.itemAt(event.position().toPoint())
+        if target is None:
+            event.ignore()
+            return
+        category = str(target.data(0, Qt.ItemDataRole.UserRole + 1) or "")
+        if not category and target.parent() is not None:
+            category = str(target.parent().data(0, Qt.ItemDataRole.UserRole + 1) or "")
+        if not category:
+            event.ignore()
+            return
+
+        self._window.move_review_to_category(review_id, category)
+        event.acceptProposedAction()
 
 
 class MainWindow(QMainWindow):
@@ -163,8 +203,7 @@ class MainWindow(QMainWindow):
         self.search_box.setPlaceholderText("Search reviews…")
         self.search_box.textChanged.connect(self._refresh_library)
 
-        self.review_tree = QTreeWidget()
-        self.review_tree.setHeaderHidden(True)
+        self.review_tree = ReviewLibraryTree(self)
         self.review_tree.itemActivated.connect(self._open_library_item)
         self.review_tree.currentItemChanged.connect(lambda current, _previous: self._open_library_item(current))
 
@@ -467,11 +506,25 @@ class MainWindow(QMainWindow):
         for category in sorted(grouped):
             folder_item = QTreeWidgetItem([f"📁 {category} ({len(grouped[category])})"])
             folder_item.setData(0, Qt.ItemDataRole.UserRole, "")
+            folder_item.setData(0, Qt.ItemDataRole.UserRole + 1, category)
+            folder_item.setFlags(
+                folder_item.flags()
+                | Qt.ItemFlag.ItemIsDropEnabled
+                | Qt.ItemFlag.ItemIsEnabled
+                | Qt.ItemFlag.ItemIsSelectable
+            )
             self.review_tree.addTopLevelItem(folder_item)
             folder_item.setExpanded(True)
             for review in grouped[category]:
                 item = QTreeWidgetItem([review.display_title()])
                 item.setData(0, Qt.ItemDataRole.UserRole, review.id)
+                item.setData(0, Qt.ItemDataRole.UserRole + 1, category)
+                item.setFlags(
+                    item.flags()
+                    | Qt.ItemFlag.ItemIsDragEnabled
+                    | Qt.ItemFlag.ItemIsEnabled
+                    | Qt.ItemFlag.ItemIsSelectable
+                )
                 vendor = review.values.get("vendor_name", review.vendor)
                 product = review.values.get("product_name", review.product)
                 item.setToolTip(0, f"Updated: {review.updated_at}\nFolder: {review.category}\nVendor: {vendor}\nProduct: {product}")
@@ -520,6 +573,12 @@ class MainWindow(QMainWindow):
         """Update the folder/category for the current review."""
         category = self.category_combo.currentText().strip() or "Uncategorized"
         self.view_model.set_current_category(category)
+        self._refresh_library(select_current=True)
+        self.statusBar().showMessage(f"Review moved to folder: {category}", 2500)
+
+    def move_review_to_category(self, review_id: str, category: str) -> None:
+        """Move a review to a folder after drag/drop."""
+        self.view_model.move_review_to_category(review_id, category)
         self._refresh_library(select_current=True)
         self.statusBar().showMessage(f"Review moved to folder: {category}", 2500)
 

@@ -73,7 +73,7 @@ class ImageMetadataServiceTests(unittest.TestCase):
             result = ImageMetadataService().clean_image(source, ImageCleanupOptions())
 
             self.assertEqual(result.uploaded_url, "")
-            self.assertEqual(result.message, "metadata removed")
+            self.assertTrue(result.message.startswith("metadata removed"))
 
 
 if __name__ == "__main__":
