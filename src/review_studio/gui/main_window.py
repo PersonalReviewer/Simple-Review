@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QAction, QCloseEvent, QDropEvent, QKeySequence
+from PySide6.QtCore import QPoint, QTimer, Qt
+from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QMouseEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
@@ -50,43 +50,79 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ReviewLibraryTree(QTreeWidget):
-    """Review tree with first-class drag/drop folder moves."""
+    """Review tree with a safe manual drag-to-folder gesture.
+
+    Qt's native ``InternalMove`` mode can reparent ``QTreeWidgetItem`` objects in C++
+    while Python code is also refreshing the tree, which can segfault on release.
+    This widget deliberately disables native drag/drop and treats a left-button
+    press/move/release as a lightweight gesture: it records the dragged review id,
+    reads the folder under the mouse on release, and lets the view-model perform
+    the move. Qt never mutates the tree structure during the gesture.
+    """
 
     def __init__(self, window: MainWindow) -> None:
         super().__init__(window)
         self._window = window
+        self._drag_review_id = ""
+        self._drag_start_pos: QPoint | None = None
+        self._manual_drag_active = False
         self.setHeaderHidden(True)
-        self.setDragEnabled(True)
-        self.setAcceptDrops(True)
-        self.setDropIndicatorShown(True)
-        self.setDefaultDropAction(Qt.DropAction.MoveAction)
-        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.setDragEnabled(False)
+        self.setAcceptDrops(False)
+        self.setDropIndicatorShown(False)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.NoDragDrop)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
 
-    def dropEvent(self, event: QDropEvent) -> None:
-        """Move a review into the folder it was dropped on."""
-        dragged_items = self.selectedItems()
-        dragged = dragged_items[0] if dragged_items else self.currentItem()
-        if dragged is None:
-            event.ignore()
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Remember review items that may become manual drag gestures."""
+        super().mousePressEvent(event)
+        if event.button() != Qt.MouseButton.LeftButton:
             return
-        review_id = str(dragged.data(0, Qt.ItemDataRole.UserRole) or "")
-        if not review_id:
-            event.ignore()
-            return
+        item = self.itemAt(event.position().toPoint())
+        review_id = str(item.data(0, Qt.ItemDataRole.UserRole) or "") if item is not None else ""
+        self._drag_review_id = review_id
+        self._drag_start_pos = event.position().toPoint() if review_id else None
+        self._manual_drag_active = False
 
-        target = self.itemAt(event.position().toPoint())
-        if target is None:
-            event.ignore()
-            return
-        category = str(target.data(0, Qt.ItemDataRole.UserRole + 1) or "")
-        if not category and target.parent() is not None:
-            category = str(target.parent().data(0, Qt.ItemDataRole.UserRole + 1) or "")
-        if not category:
-            event.ignore()
-            return
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """Show a drag cursor once the pointer moves past the drag threshold."""
+        if self._drag_review_id and self._drag_start_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            distance = (event.position().toPoint() - self._drag_start_pos).manhattanLength()
+            if distance >= QApplication.startDragDistance():
+                self._manual_drag_active = True
+                self.viewport().setCursor(Qt.CursorShape.ClosedHandCursor)
+                event.accept()
+                return
+        super().mouseMoveEvent(event)
 
-        event.acceptProposedAction()
-        QTimer.singleShot(0, lambda: self._window.move_review_to_category(review_id, category))
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """Move the dragged review to the folder under the pointer on release."""
+        review_id = self._drag_review_id
+        was_dragging = self._manual_drag_active
+        self._clear_manual_drag()
+        if event.button() == Qt.MouseButton.LeftButton and review_id and was_dragging:
+            category = self._category_for_item(self.itemAt(event.position().toPoint()))
+            if category:
+                QTimer.singleShot(0, lambda rid=review_id, cat=category: self._window.move_review_to_category(rid, cat))
+                event.accept()
+                return
+        super().mouseReleaseEvent(event)
+
+    def _category_for_item(self, item: QTreeWidgetItem | None) -> str:
+        """Return the folder/category represented by a tree item."""
+        if item is None:
+            return ""
+        category = str(item.data(0, Qt.ItemDataRole.UserRole + 1) or "")
+        if not category and item.parent() is not None:
+            category = str(item.parent().data(0, Qt.ItemDataRole.UserRole + 1) or "")
+        return category
+
+    def _clear_manual_drag(self) -> None:
+        """Reset manual drag state and restore the normal cursor."""
+        self._drag_review_id = ""
+        self._drag_start_pos = None
+        self._manual_drag_active = False
+        self.viewport().unsetCursor()
 
 
 class MainWindow(QMainWindow):
@@ -504,6 +540,9 @@ class MainWindow(QMainWindow):
         grouped: dict[str, list[Review]] = {}
         for review in reviews:
             grouped.setdefault(review.category or "Uncategorized", []).append(review)
+        if not query.strip():
+            for category in self.view_model.categories():
+                grouped.setdefault(category, [])
         for category in sorted(grouped):
             folder_item = QTreeWidgetItem([f"📁 {category} ({len(grouped[category])})"])
             folder_item.setData(0, Qt.ItemDataRole.UserRole, "")
@@ -532,7 +571,7 @@ class MainWindow(QMainWindow):
                 folder_item.addChild(item)
                 if select_current and review.id == current_id:
                     self.review_tree.setCurrentItem(item)
-        if not reviews:
+        if not grouped:
             item = QTreeWidgetItem(["No reviews found"])
             item.setData(0, Qt.ItemDataRole.UserRole, "")
             item.setFlags(Qt.ItemFlag.NoItemFlags)
