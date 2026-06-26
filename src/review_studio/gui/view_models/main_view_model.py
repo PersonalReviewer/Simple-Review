@@ -77,6 +77,21 @@ class MainViewModel:
         reviews = self.review_service.list_reviews()
         self.current_review = reviews[0] if reviews else self.review_service.create_review()
 
+    def delete_reviews(self, review_ids: list[str]) -> int:
+        """Delete selected reviews and select a safe replacement.
+
+        Duplicate ids are ignored while preserving the user's selection order.
+        Returns the number of unique reviews deleted.
+        """
+        unique_ids = list(dict.fromkeys(review_id for review_id in review_ids if review_id))
+        if not unique_ids:
+            return 0
+        for review_id in unique_ids:
+            self.review_service.delete_review(review_id)
+        reviews = self.review_service.list_reviews()
+        self.current_review = reviews[0] if reviews else self.review_service.create_review()
+        return len(unique_ids)
+
     def list_reviews(self) -> list[Review]:
         """Return all reviews for the library."""
         return self.review_service.list_reviews()

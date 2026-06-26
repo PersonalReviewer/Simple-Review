@@ -71,7 +71,7 @@ class ReviewLibraryTree(QTreeWidget):
         self.setAcceptDrops(False)
         self.setDropIndicatorShown(False)
         self.setDragDropMode(QAbstractItemView.DragDropMode.NoDragDrop)
-        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """Remember review items that may become manual drag gestures."""
@@ -242,7 +242,7 @@ class MainWindow(QMainWindow):
 
         self.review_tree = ReviewLibraryTree(self)
         self.review_tree.itemActivated.connect(self._open_library_item)
-        self.review_tree.currentItemChanged.connect(lambda current, _previous: self._open_library_item(current))
+        self.review_tree.itemClicked.connect(self._open_library_item_from_click)
 
         folder_label = QLabel("Current folder")
         folder_label.setStyleSheet("font-weight: 700;")
@@ -609,6 +609,15 @@ class MainWindow(QMainWindow):
             LOGGER.exception("Could not open review")
             QMessageBox.warning(self, "Open Review Failed", str(exc))
 
+    def _open_library_item_from_click(self, item: QTreeWidgetItem, _column: int) -> None:
+        """Open plain single-clicks while preserving shift/ctrl multi-selection."""
+        modifiers = QApplication.keyboardModifiers()
+        if modifiers & (Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier):
+            return
+        if len(self._selected_review_ids()) > 1:
+            return
+        self._open_library_item(item)
+
     def _set_current_category(self) -> None:
         """Update the folder/category for the current review."""
         category = self.category_combo.currentText().strip() or "Uncategorized"
@@ -658,19 +667,46 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Review duplicated", 2500)
 
     def _delete_review(self) -> None:
-        """Delete the current review after confirmation."""
+        """Delete the selected review or reviews after confirmation."""
+        selected_review_ids = self._selected_review_ids()
+        if not selected_review_ids:
+            selected_review_ids = [self.view_model.current_review.id]
+
+        if len(selected_review_ids) == 1:
+            review = self._review_by_id(selected_review_ids[0]) or self.view_model.current_review
+            message = f"Delete '{review.display_title()}'? This cannot be undone."
+            title = "Delete Review"
+        else:
+            message = f"Delete {len(selected_review_ids)} selected reviews? This cannot be undone."
+            title = "Delete Reviews"
         response = QMessageBox.question(
             self,
-            "Delete Review",
-            f"Delete '{self.view_model.current_review.display_title()}'? This cannot be undone.",
+            title,
+            message,
         )
         if response != QMessageBox.StandardButton.Yes:
             return
-        self.view_model.delete_current_review()
+        deleted_count = self.view_model.delete_reviews(selected_review_ids)
         self._populate_form(self.view_model.current_review)
         self._refresh_library(select_current=True)
         self._refresh_preview(save=False)
-        self.statusBar().showMessage("Review deleted", 2500)
+        self.statusBar().showMessage(f"Deleted {deleted_count} review{'s' if deleted_count != 1 else ''}", 2500)
+
+    def _selected_review_ids(self) -> list[str]:
+        """Return selected review ids, excluding folder/category rows."""
+        ids: list[str] = []
+        for item in self.review_tree.selectedItems():
+            review_id = str(item.data(0, Qt.ItemDataRole.UserRole) or "")
+            if review_id:
+                ids.append(review_id)
+        return list(dict.fromkeys(ids))
+
+    def _review_by_id(self, review_id: str) -> Review | None:
+        """Return a review from the current library by id if present."""
+        for review in self.view_model.list_reviews():
+            if review.id == review_id:
+                return review
+        return None
 
     def _open_settings(self) -> None:
         """Open settings and apply changes."""

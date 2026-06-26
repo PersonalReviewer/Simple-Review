@@ -72,6 +72,24 @@ class ViewModelTests(unittest.TestCase):
             self.assertEqual(loaded.category, "Vendors")
             self.assertEqual(service.search_reviews("vendors")[0].id, review_id)
 
+    def test_delete_reviews_removes_multiple_and_selects_replacement(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            engine = TemplateEngine()
+            service = ReviewService(ReviewRepository(root / "reviews"), SettingsStore(root / "settings.json"))
+            view_model = MainViewModel(service, TemplateService(engine), ExportService(engine))
+
+            first_id = view_model.current_review.id
+            second_id = view_model.create_review().id
+            third_id = view_model.create_review().id
+
+            deleted_count = view_model.delete_reviews([first_id, second_id, second_id])
+
+            self.assertEqual(deleted_count, 2)
+            remaining_ids = {review.id for review in view_model.list_reviews()}
+            self.assertEqual(remaining_ids, {third_id})
+            self.assertEqual(view_model.current_review.id, third_id)
+
 
 if __name__ == "__main__":
     unittest.main()
