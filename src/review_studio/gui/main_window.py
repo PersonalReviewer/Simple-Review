@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import QPoint, QTimer, Qt
+from PySide6.QtCore import QItemSelectionModel, QPoint, QTimer, Qt
 from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QMouseEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -133,6 +133,9 @@ class MainWindow(QMainWindow):
         self.view_model = view_model
         self.preview_renderer = PreviewRenderer()
         self._loading = False
+        self._refreshing_library = False
+        self._library_expanded_categories: dict[str, bool] = {}
+        self._library_selected_review_ids: list[str] = [self.view_model.current_review.id]
         self._field_widgets: dict[str, QWidget] = {}
         self._rating_guidance_labels: dict[str, QLabel] = {}
 
@@ -243,6 +246,9 @@ class MainWindow(QMainWindow):
         self.review_tree = ReviewLibraryTree(self)
         self.review_tree.itemActivated.connect(self._open_library_item)
         self.review_tree.itemClicked.connect(self._open_library_item_from_click)
+        self.review_tree.itemExpanded.connect(lambda item: self._remember_library_folder_state(item, expanded=True))
+        self.review_tree.itemCollapsed.connect(lambda item: self._remember_library_folder_state(item, expanded=False))
+        self.review_tree.itemSelectionChanged.connect(self._remember_library_selection)
 
         folder_label = QLabel("Current folder")
         folder_label.setStyleSheet("font-weight: 700;")
@@ -475,7 +481,7 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(f"Review Studio — {self.view_model.current_review.display_title()}")
             if save:
                 self.view_model.save_current_review()
-                self._refresh_library(select_current=True)
+                self._refresh_library()
         except Exception as exc:
             LOGGER.exception("Could not refresh preview")
             self.validation_label.setText(f"Preview error: {exc}")
@@ -484,7 +490,7 @@ class MainWindow(QMainWindow):
         """Persist the current review without interrupting the user."""
         try:
             self.view_model.save_current_review()
-            self._refresh_library(select_current=True)
+            self._refresh_library()
             self.autosave_label.setText("Autosaved")
         except Exception as exc:
             LOGGER.exception("Autosave failed")
@@ -530,65 +536,101 @@ class MainWindow(QMainWindow):
         return ExportFormat.BBCODE
 
     def _refresh_library(self, *_args: object, select_current: bool = False) -> None:
-        """Refresh the review library list."""
+        """Refresh the review library without overriding the user's tree state."""
         query = self.search_box.text() if hasattr(self, "search_box") else ""
         reviews = self.view_model.search_reviews(query)
         current_id = self.view_model.current_review.id
+        self._snapshot_library_folder_state()
+        selected_review_ids = [current_id] if select_current else list(self._library_selected_review_ids)
+        selected_items: list[QTreeWidgetItem] = []
         self.review_tree.blockSignals(True)
-        self.review_tree.clear()
-        self._refresh_category_combo(reviews)
-        grouped: dict[str, list[Review]] = {}
-        for review in reviews:
-            grouped.setdefault(review.category or "Uncategorized", []).append(review)
-        if not query.strip():
-            for category in self.view_model.categories():
-                grouped.setdefault(category, [])
-        for category in sorted(grouped):
-            folder_item = QTreeWidgetItem([f"📁 {category} ({len(grouped[category])})"])
-            folder_item.setData(0, Qt.ItemDataRole.UserRole, "")
-            folder_item.setData(0, Qt.ItemDataRole.UserRole + 1, category)
-            folder_item.setFlags(
-                folder_item.flags()
-                | Qt.ItemFlag.ItemIsDropEnabled
-                | Qt.ItemFlag.ItemIsEnabled
-                | Qt.ItemFlag.ItemIsSelectable
-            )
-            self.review_tree.addTopLevelItem(folder_item)
-            folder_item.setExpanded(True)
-            for review in grouped[category]:
-                item = QTreeWidgetItem([review.display_title()])
-                item.setData(0, Qt.ItemDataRole.UserRole, review.id)
-                item.setData(0, Qt.ItemDataRole.UserRole + 1, category)
-                item.setFlags(
-                    item.flags()
-                    | Qt.ItemFlag.ItemIsDragEnabled
+        self._refreshing_library = True
+        try:
+            self.review_tree.clear()
+            self._refresh_category_combo(reviews)
+            grouped: dict[str, list[Review]] = {}
+            for review in reviews:
+                grouped.setdefault(review.category or "Uncategorized", []).append(review)
+            if not query.strip():
+                for category in self.view_model.categories():
+                    grouped.setdefault(category, [])
+            for category in sorted(grouped):
+                folder_item = QTreeWidgetItem([f"📁 {category} ({len(grouped[category])})"])
+                folder_item.setData(0, Qt.ItemDataRole.UserRole, "")
+                folder_item.setData(0, Qt.ItemDataRole.UserRole + 1, category)
+                folder_item.setFlags(
+                    folder_item.flags()
+                    | Qt.ItemFlag.ItemIsDropEnabled
                     | Qt.ItemFlag.ItemIsEnabled
                     | Qt.ItemFlag.ItemIsSelectable
                 )
-                vendor = review.values.get("vendor_name", review.vendor)
-                product = review.values.get("product_name", review.product)
-                item.setToolTip(0, f"Updated: {review.updated_at}\nFolder: {review.category}\nVendor: {vendor}\nProduct: {product}")
-                folder_item.addChild(item)
-                if select_current and review.id == current_id:
-                    self.review_tree.setCurrentItem(item)
-        if not grouped:
-            item = QTreeWidgetItem(["No reviews found"])
-            item.setData(0, Qt.ItemDataRole.UserRole, "")
-            item.setFlags(Qt.ItemFlag.NoItemFlags)
-            self.review_tree.addTopLevelItem(item)
-        self.review_tree.blockSignals(False)
+                self.review_tree.addTopLevelItem(folder_item)
+                folder_item.setExpanded(self._library_expanded_categories.get(category, True))
+                for review in grouped[category]:
+                    item = QTreeWidgetItem([review.display_title()])
+                    item.setData(0, Qt.ItemDataRole.UserRole, review.id)
+                    item.setData(0, Qt.ItemDataRole.UserRole + 1, category)
+                    item.setFlags(
+                        item.flags()
+                        | Qt.ItemFlag.ItemIsDragEnabled
+                        | Qt.ItemFlag.ItemIsEnabled
+                        | Qt.ItemFlag.ItemIsSelectable
+                    )
+                    vendor = review.values.get("vendor_name", review.vendor)
+                    product = review.values.get("product_name", review.product)
+                    item.setToolTip(0, f"Updated: {review.updated_at}\nFolder: {review.category}\nVendor: {vendor}\nProduct: {product}")
+                    folder_item.addChild(item)
+                    if review.id in selected_review_ids:
+                        item.setSelected(True)
+                        selected_items.append(item)
+            if not grouped:
+                item = QTreeWidgetItem(["No reviews found"])
+                item.setData(0, Qt.ItemDataRole.UserRole, "")
+                item.setFlags(Qt.ItemFlag.NoItemFlags)
+                self.review_tree.addTopLevelItem(item)
+            if selected_items:
+                self.review_tree.setCurrentItem(selected_items[0], 0, QItemSelectionModel.SelectionFlag.NoUpdate)
+        finally:
+            self._refreshing_library = False
+            self.review_tree.blockSignals(False)
 
-    def _refresh_category_combo(self, reviews: list[Review]) -> None:
-        """Refresh folder/category options without losing the current value."""
+    def _refresh_category_combo(self, reviews: list[Review], preserve_user_text: bool = True) -> None:
+        """Refresh folder/category options without overwriting the user's typed choice."""
         current_category = self.view_model.current_review.category or "Uncategorized"
         categories = sorted({current_category, *self.view_model.categories()})
+        previous_text = self.category_combo.currentText().strip()
+        target_text = previous_text if preserve_user_text and previous_text else current_category
         self.category_combo.blockSignals(True)
         self.category_combo.clear()
         self.category_combo.addItems(categories)
-        index = self.category_combo.findText(current_category)
+        index = self.category_combo.findText(target_text)
         self.category_combo.setCurrentIndex(max(index, 0))
-        self.category_combo.setEditText(current_category)
+        self.category_combo.setEditText(target_text)
         self.category_combo.blockSignals(False)
+
+    def _snapshot_library_folder_state(self) -> None:
+        """Persist current folder expanded/collapsed state before rebuilding the tree."""
+        for index in range(self.review_tree.topLevelItemCount()):
+            item = self.review_tree.topLevelItem(index)
+            if item is None:
+                continue
+            self._remember_library_folder_state(item, expanded=item.isExpanded())
+
+    def _remember_library_folder_state(self, item: QTreeWidgetItem, expanded: bool) -> None:
+        """Remember a folder's expanded/collapsed state for future refreshes."""
+        if self._refreshing_library:
+            return
+        if str(item.data(0, Qt.ItemDataRole.UserRole) or ""):
+            return
+        category = str(item.data(0, Qt.ItemDataRole.UserRole + 1) or "")
+        if category:
+            self._library_expanded_categories[category] = expanded
+
+    def _remember_library_selection(self) -> None:
+        """Remember review selections so refreshes do not replace user choices."""
+        if self._refreshing_library:
+            return
+        self._library_selected_review_ids = self._selected_review_ids()
 
     def _open_library_item(self, item: QTreeWidgetItem | None) -> None:
         """Open an item from the review library."""
@@ -622,13 +664,13 @@ class MainWindow(QMainWindow):
         """Update the folder/category for the current review."""
         category = self.category_combo.currentText().strip() or "Uncategorized"
         self.view_model.set_current_category(category)
-        self._refresh_library(select_current=True)
+        self._refresh_library()
         self.statusBar().showMessage(f"Review moved to folder: {category}", 2500)
 
     def move_review_to_category(self, review_id: str, category: str) -> None:
         """Move a review to a folder after drag/drop."""
         self.view_model.move_review_to_category(review_id, category)
-        self._refresh_library(select_current=True)
+        self._refresh_library()
         self.statusBar().showMessage(f"Review moved to folder: {category}", 2500)
 
     def _create_category(self) -> None:
@@ -642,7 +684,7 @@ class MainWindow(QMainWindow):
         if not accepted:
             return
         clean_category = self.view_model.create_category(category)
-        self._refresh_library(select_current=True)
+        self._refresh_library()
         self.category_combo.setEditText(clean_category)
         self.statusBar().showMessage(f"Folder created: {clean_category}. Click Move or drag a review into it.", 3500)
 
@@ -650,6 +692,7 @@ class MainWindow(QMainWindow):
         """Create a new review and focus the first field."""
         self._autosave()
         review = self.view_model.create_review()
+        self._library_selected_review_ids = [review.id]
         self._populate_form(review)
         self._refresh_library(select_current=True)
         self._refresh_preview(save=False)
@@ -661,6 +704,7 @@ class MainWindow(QMainWindow):
         """Duplicate the current review."""
         self._autosave()
         review = self.view_model.duplicate_current_review()
+        self._library_selected_review_ids = [review.id]
         self._populate_form(review)
         self._refresh_library(select_current=True)
         self._refresh_preview(save=False)
@@ -687,6 +731,7 @@ class MainWindow(QMainWindow):
         if response != QMessageBox.StandardButton.Yes:
             return
         deleted_count = self.view_model.delete_reviews(selected_review_ids)
+        self._library_selected_review_ids = [self.view_model.current_review.id]
         self._populate_form(self.view_model.current_review)
         self._refresh_library(select_current=True)
         self._refresh_preview(save=False)
