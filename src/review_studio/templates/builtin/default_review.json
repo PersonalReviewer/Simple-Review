@@ -1,0 +1,371 @@
+{
+  "id": "default_review",
+  "name": "Default BBCode Table Review",
+  "version": "1.1",
+  "description": "Template-driven BBCode table review layout with structured ratings, notes, and summary.",
+  "default_format": "bbcode",
+  "rating_options": [
+    {
+      "value": null,
+      "name": "N/A",
+      "color": "#999999",
+      "description": "Not applicable: Not necessary or relevant, nothing to rate. ( e.g., No communication necessary )"
+    },
+    {
+      "value": 1,
+      "name": "Failure",
+      "color": "#d9534f",
+      "description": "Unacceptable: Major problem(s), item/service fundamentally broken or missing."
+    },
+    {
+      "value": 2,
+      "name": "Poor",
+      "color": "#f06c64",
+      "description": "Clearly inadequate: Multiple problems, heavy user effort required to recover."
+    },
+    {
+      "value": 3,
+      "name": "Basic",
+      "color": "#f0ad4e",
+      "description": "Bare minimum: Functional but obvious shortcomings and friction."
+    },
+    {
+      "value": 4,
+      "name": "Adequate",
+      "color": "#90d00f",
+      "description": "Baseline: Solid, reliable, meets reasonable expectations. No surprises."
+    },
+    {
+      "value": 5,
+      "name": "Strong",
+      "color": "#5cb85c",
+      "description": "Above average: Thoughtful implementation and noticeable quality."
+    },
+    {
+      "value": 6,
+      "name": "Advanced",
+      "color": "#5bc0de",
+      "description": "High-end: Professional, well thought-out execution, refined, with extra effort/skill shown."
+    },
+    {
+      "value": 7,
+      "name": "Exceptional",
+      "color": "#428bca",
+      "description": "Exemplary: Stands out, elite-level, rare to encounter. Exceeds expectations in a way that impresses."
+    }
+  ],
+  "sections": [
+    {
+      "title": "Basic Information",
+      "fields": [
+        {
+          "key": "vendor_name",
+          "label": "Vendor Name",
+          "type": "text",
+          "required": true,
+          "placeholder": "Vendor username without /u/"
+        },
+        {
+          "key": "product_name",
+          "label": "Product / Listing Name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "market",
+          "label": "Market",
+          "type": "text",
+          "required": true,
+          "placeholder": "Market name without /d/"
+        },
+        {
+          "key": "order_type",
+          "label": "Order Type",
+          "type": "select",
+          "options": [
+            "Purchase",
+            "Sample"
+          ]
+        },
+        {
+          "key": "quantity",
+          "label": "Quantity",
+          "type": "text"
+        },
+        {
+          "key": "listing_type",
+          "label": "Listing Type",
+          "type": "select",
+          "options": [
+            "2/2 Multisig",
+            "2/3 Multisig",
+            "Finalize Early",
+            "Traditional Escrow",
+            "Direct Deal"
+          ]
+        },
+        {
+          "key": "price",
+          "label": "Total Price",
+          "type": "text"
+        },
+        {
+          "key": "shipping_cost",
+          "label": "Price + Shipping Notes",
+          "type": "text"
+        },
+        {
+          "key": "picture_album_url",
+          "label": "Picture Album URL",
+          "type": "url"
+        },
+        {
+          "key": "album_name",
+          "label": "Album Name",
+          "type": "text",
+          "placeholder": "Pictures"
+        }
+      ]
+    },
+    {
+      "title": "Product Details",
+      "fields": [
+        {
+          "key": "price_value",
+          "label": "Price Value Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "price_value",
+          "label": "Price Value Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        },
+        {
+          "key": "test_result",
+          "label": "Reagent Test Result",
+          "type": "select",
+          "options": [
+            "PASS",
+            "FAIL",
+            "N/A"
+          ]
+        },
+        {
+          "key": "test_notes",
+          "label": "Reagent Test Notes",
+          "type": "multiline"
+        },
+        {
+          "key": "test_link",
+          "label": "Reagent Test Link",
+          "type": "url"
+        },
+        {
+          "key": "quantity",
+          "label": "Quantity Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "quantity",
+          "label": "Quantity Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        },
+        {
+          "key": "quality",
+          "label": "Quality/Potency Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "quality",
+          "label": "Quality/Potency Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        },
+        {
+          "key": "aesthetic",
+          "label": "Aesthetic Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "aesthetic",
+          "label": "Aesthetic Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        },
+        {
+          "key": "overall_product",
+          "label": "Overall Product Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "overall_product",
+          "label": "Overall Product Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        }
+      ]
+    },
+    {
+      "title": "Shipping",
+      "fields": [
+        {
+          "key": "shipping_method",
+          "label": "Shipping Option",
+          "type": "text",
+          "placeholder": "Exact shipping option"
+        },
+        {
+          "key": "shipping_time",
+          "label": "Shipping Time Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "shipping_time",
+          "label": "Shipping Time Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        },
+        {
+          "key": "packaging",
+          "label": "Stealth Quality Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "stealth"
+        },
+        {
+          "key": "packaging",
+          "label": "Stealth Quality Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        },
+        {
+          "key": "overall_shipping",
+          "label": "Overall Shipping Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "overall_shipping",
+          "label": "Overall Shipping Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        }
+      ]
+    },
+    {
+      "title": "Customer Service",
+      "fields": [
+        {
+          "key": "clear_sales_terms",
+          "label": "Clear Sales Terms",
+          "type": "select",
+          "options": [
+            "YES",
+            "NO"
+          ]
+        },
+        {
+          "key": "friendliness",
+          "label": "Friendliness Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "friendliness",
+          "label": "Friendliness Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        },
+        {
+          "key": "professionalism",
+          "label": "Professionalism Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "professionalism",
+          "label": "Professionalism Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        },
+        {
+          "key": "response_time",
+          "label": "Response Time Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "response_time",
+          "label": "Response Time Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        },
+        {
+          "key": "overall_customer_service",
+          "label": "Overall Customer Service Rating",
+          "type": "rating",
+          "namespace": "rating",
+          "rating_scale": "standard"
+        },
+        {
+          "key": "overall_customer_service",
+          "label": "Overall Customer Service Notes",
+          "type": "multiline",
+          "namespace": "comment"
+        }
+      ]
+    },
+    {
+      "title": "Summary",
+      "fields": [
+        {
+          "key": "final_summary",
+          "label": "Final Summary",
+          "type": "multiline",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "body": "[table]\n[tr]\n[th][subtitle][center] VENDOR NAME [/center][/subtitle][/th]\n[th][subtitle][center] PRODUCT [/center][/subtitle][/th]\n[th][subtitle][center] MARKET [/center][/subtitle][/th]\n[/tr]\n[tr]\n[td][subtitle][center] /u/{{ vendor_name }} [/center][/subtitle][/td]\n[td][subtitle][center] {{ product_name }} [/center][/subtitle][/td]\n[td][subtitle][center] /d/{{ market }} [/center][/subtitle][/td]\n[/tr]\n[/table]\n[table]\n[tr]\n[th][subtitle][center] PRODUCT DETAILS [/center][/subtitle][/th]\n[th][subtitle][center] VALUE/RATING [/center][/subtitle][/th]\n[th][subtitle][center] NOTES [/center][/subtitle][/th]\n[/tr]\n[tr]\n[td] Order [/td]\n[td][center] {{ order_type }} – {{ quantity }} [/center][/td]\n[td] - [/td]\n[/tr]\n[tr]\n[td] Listing Type [/td]\n[td][center] {{ listing_type }} [/center][/td]\n[td] - [/td]\n[/tr]\n[tr]\n[td] Price [/td]\n[td][center] {{ price }} [/center][/td]\n[td] {{ shipping_cost }} [/td]\n[/tr]\n[tr]\n[td] Price Value [/td]\n[td][center] {{ rating.price_value }} [/center][/td]\n[td] {{ comment.price_value }} [/td]\n[/tr]\n[tr]\n[td] Reagent Test [/td]\n[td][center] {{ test_result }} [/center][/td]\n[td] {{ test_notes }}{% if test_link %}\n[url={{ test_link }}]Reagent Test Results[/url]{% endif %}[/td]\n[/tr]\n[tr]\n[td] Quantity Rating [/td]\n[td][center] {{ rating.quantity }} [/center][/td]\n[td] {{ comment.quantity }} [/td]\n[/tr]\n[tr]\n[td] Quality/Potency Rating [/td]\n[td][center] {{ rating.quality }} [/center][/td]\n[td] {{ comment.quality }} [/td]\n[/tr]\n[tr]\n[td] Aesthetic [/td]\n[td][center] {{ rating.aesthetic }} [/center][/td]\n[td] {{ comment.aesthetic }} [/td]\n[/tr]\n[tr]\n[td] Picture Link [/td]\n[td][center]{% if picture_album_url %}[url={{ picture_album_url }}]{{ album_name or \"Pictures\" }}[/url]{% else %}-{% endif %}[/center][/td]\n[td] - [/td]\n[/tr]\n[tr]\n[td] Overall Product Rating [/td]\n[td][center] {{ rating.overall_product }} [/center][/td]\n[td] {{ comment.overall_product }} [/td]\n[/tr]\n[tr]\n[th][subtitle][center] SHIPPING [/center][/subtitle][/th]\n[th][subtitle][center] RATING [/center][/subtitle][/th]\n[th][subtitle][center] NOTES [/center][/subtitle][/th]\n[/tr]\n[tr]\n[td] Shipping Option [/td]\n[td][center] - [/center][/td]\n[td] {{ shipping_method }} [/td]\n[/tr]\n[tr]\n[td] Shipping Time [/td]\n[td][center] {{ rating.shipping_time }} [/center][/td]\n[td] {{ comment.shipping_time }} [/td]\n[/tr]\n[tr]\n[td] Stealth Quality [/td]\n[td][center] {{ rating.packaging }} [/center][/td]\n[td] {{ comment.packaging }} [/td]\n[/tr]\n[tr]\n[td] Overall Shipping Rating [/td]\n[td][center] {{ rating.overall_shipping }} [/center][/td]\n[td] {{ comment.overall_shipping }} [/td]\n[/tr]\n[tr]\n[th][subtitle][center] CUSTOMER SERVICE [/center][/subtitle][/th]\n[th][subtitle][center] RATING [/center][/subtitle][/th]\n[th][subtitle][center] NOTES [/center][/subtitle][/th]\n[/tr]\n[tr]\n[td] Clear Sales Terms [/td]\n[td][center] {{ clear_sales_terms }} [/center][/td]\n[td] - [/td]\n[/tr]\n[tr]\n[td] Friendliness [/td]\n[td][center] {{ rating.friendliness }} [/center][/td]\n[td] {{ comment.friendliness }} [/td]\n[/tr]\n[tr]\n[td] Professionalism [/td]\n[td][center] {{ rating.professionalism }} [/center][/td]\n[td] {{ comment.professionalism }} [/td]\n[/tr]\n[tr]\n[td] Response Time [/td]\n[td][center] {{ rating.response_time }} [/center][/td]\n[td] {{ comment.response_time }} [/td]\n[/tr]\n[tr]\n[td] Overall Customer Service Rating [/td]\n[td][center] {{ rating.overall_customer_service }} [/center][/td]\n[td] {{ comment.overall_customer_service }} [/td]\n[/tr]\n[tr]\n[th] SUMMARY [/th]\n[th] FINAL REVIEW [/th]\n[th] NOTES [/th]\n[/tr]\n[tr]\n[td] Final Summary [/td]\n[td] {{ final_summary }} [/td]\n[td] - [/td]\n[/tr]\n[/table]\n",
+  "rating_scales": {
+    "standard": {
+      "na": "Not applicable: Not necessary or relevant, nothing to rate. ( e.g., No communication necessary )",
+      "1": "Unacceptable: Major problem(s), item/service fundamentally broken or missing.",
+      "2": "Clearly inadequate: Multiple problems, heavy user effort required to recover.",
+      "3": "Bare minimum: Functional but obvious shortcomings and friction.",
+      "4": "Baseline: Solid, reliable, meets reasonable expectations. No surprises.",
+      "5": "Above average: Thoughtful implementation and noticeable quality.",
+      "6": "High-end: Professional, well thought-out execution, refined, with extra effort/skill shown.",
+      "7": "Exemplary: Stands out, elite-level, rare to encounter. Exceeds expectations in a way that impresses."
+    },
+    "stealth": {
+      "1": "Broken, missing, or exposed product. Might as well have shipped it with a label saying “Drugs Inside”.",
+      "2": "Flimsy packaging, contents obvious with light handling. Noticeable smell, shape, or other obvious characteristic.",
+      "3": "Simple container inside packaging. Contents intact, but easy to guess.",
+      "4": "Sealed vacuum/Mylar + some padding/inner packaging. Passes casual inspection.",
+      "5": "Multiple protective layers. No smell, rattling, or obvious signs.",
+      "6": "Includes some form of obfuscation/decoy/disguise. Hard to detect even if opened.",
+      "7": "“Where the fuck are my drugs??” level stealth. Multiple layers + obfuscation, hidden even under scrutiny.",
+      "na": "Not applicable: Not necessary or relevant, nothing to rate. ( e.g., No communication necessary )"
+    }
+  }
+}

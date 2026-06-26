@@ -1,0 +1,1 @@
+"""Bundled templates shipped with Review Studio."""

@@ -1,0 +1,57 @@
+[b]{{ display_title }}[/b]
+
+[b]Vendor:[/b] {{ vendor | default('') }}
+[b]Market:[/b] {{ market | default('') }}
+[b]Product:[/b] {{ product | default('') }}
+{% if product_url %}[b]Product URL:[/b] {{ product_url }}
+{% endif %}
+[b]Purchase Date:[/b] {{ purchase_date | default('') }}
+[b]Purchase Price:[/b] {{ purchase_price | default('') }} {{ currency | default('') }}
+[b]Quantity:[/b] {{ quantity | default('') }}
+{% if order_id %}[b]Order ID:[/b] {{ order_id }}
+{% endif %}
+[hr]
+[b]Ratings[/b]
+
+[b]Quality Rating:[/b] {{ ratings_formatted.quality }}
+{{ ratings.quality.comments }}
+
+[b]Value Rating:[/b] {{ ratings_formatted.value }}
+{{ ratings.value.comments }}
+
+[b]Accuracy Rating:[/b] {{ ratings_formatted.accuracy }}
+{{ ratings.accuracy.comments }}
+
+[b]Communication Rating:[/b] {{ ratings_formatted.communication }}
+{{ ratings.communication.comments }}
+
+[b]Shipping Rating:[/b] {{ ratings_formatted.shipping }}
+{{ ratings.shipping.comments }}
+
+[b]Customer Service Rating:[/b] {{ ratings_formatted.customer_service }}
+{{ ratings.customer_service.comments }}
+
+[b]Overall Rating:[/b] {{ ratings_formatted.overall }}
+{{ ratings.overall.comments }}
+
+[hr]
+[b]Vendor Comments[/b]
+{{ vendor_comments }}
+
+[b]Product Comments[/b]
+{{ product_comments }}
+
+[b]Market Comments[/b]
+{{ market_comments }}
+
+[b]Pricing Comments[/b]
+{{ pricing_comments }}
+
+[b]Shipping Information[/b]
+{{ shipping_information }}
+
+[b]Customer Service Information[/b]
+{{ customer_service_information }}
+
+[b]Summary[/b]
+{{ summary }}
