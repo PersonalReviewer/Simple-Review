@@ -64,7 +64,8 @@ class ReviewLibraryTree(QTreeWidget):
 
     def dropEvent(self, event: QDropEvent) -> None:
         """Move a review into the folder it was dropped on."""
-        dragged = self.currentItem()
+        dragged_items = self.selectedItems()
+        dragged = dragged_items[0] if dragged_items else self.currentItem()
         if dragged is None:
             event.ignore()
             return
@@ -84,8 +85,8 @@ class ReviewLibraryTree(QTreeWidget):
             event.ignore()
             return
 
-        self._window.move_review_to_category(review_id, category)
         event.acceptProposedAction()
+        QTimer.singleShot(0, lambda: self._window.move_review_to_category(review_id, category))
 
 
 class MainWindow(QMainWindow):
@@ -541,7 +542,7 @@ class MainWindow(QMainWindow):
     def _refresh_category_combo(self, reviews: list[Review]) -> None:
         """Refresh folder/category options without losing the current value."""
         current_category = self.view_model.current_review.category or "Uncategorized"
-        categories = sorted({"Uncategorized", current_category, *(review.category or "Uncategorized" for review in reviews)})
+        categories = sorted({current_category, *self.view_model.categories()})
         self.category_combo.blockSignals(True)
         self.category_combo.clear()
         self.category_combo.addItems(categories)
@@ -583,7 +584,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Review moved to folder: {category}", 2500)
 
     def _create_category(self) -> None:
-        """Prompt for a new folder/category and move the current review there."""
+        """Prompt for a new folder/category without moving the current review."""
         category, accepted = QInputDialog.getText(
             self,
             "New Review Folder",
@@ -592,9 +593,10 @@ class MainWindow(QMainWindow):
         )
         if not accepted:
             return
-        clean_category = category.strip() or "Uncategorized"
+        clean_category = self.view_model.create_category(category)
+        self._refresh_library(select_current=True)
         self.category_combo.setEditText(clean_category)
-        self._set_current_category()
+        self.statusBar().showMessage(f"Folder created: {clean_category}. Click Move or drag a review into it.", 3500)
 
     def _new_review(self) -> None:
         """Create a new review and focus the first field."""

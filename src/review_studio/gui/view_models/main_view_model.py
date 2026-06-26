@@ -108,14 +108,31 @@ class MainViewModel:
         self.review_service.save_settings(self.settings)
         self.save_current_review()
 
+    def categories(self) -> list[str]:
+        """Return known review folders/categories."""
+        discovered = {review.category or "Uncategorized" for review in self.review_service.list_reviews()}
+        configured = {category.strip() or "Uncategorized" for category in self.settings.review_categories}
+        return sorted({"Uncategorized", *configured, *discovered})
+
+    def create_category(self, category: str) -> str:
+        """Create/select a category without moving the active review."""
+        clean_category = category.strip() or "Uncategorized"
+        categories = self.categories()
+        if clean_category not in categories:
+            categories.append(clean_category)
+            self.settings.review_categories = sorted(set(categories))
+            self.review_service.save_settings(self.settings)
+        return clean_category
+
     def set_current_category(self, category: str) -> None:
         """Move the current review into a library category/folder."""
-        self.current_review.category = category.strip() or "Uncategorized"
+        clean_category = self.create_category(category)
+        self.current_review.category = clean_category
         self.save_current_review()
 
     def move_review_to_category(self, review_id: str, category: str) -> None:
         """Move any saved review into a category/folder."""
-        clean_category = category.strip() or "Uncategorized"
+        clean_category = self.create_category(category)
         if review_id == self.current_review.id:
             self.set_current_category(clean_category)
             return

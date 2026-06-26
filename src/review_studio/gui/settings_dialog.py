@@ -71,6 +71,7 @@ class SettingsDialog(QDialog):
             review_library_folder=self.review_library_folder.text().strip(),
             default_template_id=self.template_id.text().strip() or "default_review",
             recent_review_ids=list(self._settings.recent_review_ids),
+            review_categories=list(self._settings.review_categories),
         )
 
     def _folder_row(self, line_edit: QLineEdit) -> QWidget:

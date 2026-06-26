@@ -21,6 +21,7 @@ class UserSettings:
     review_library_folder: str = ""
     default_template_id: str = "default_review"
     recent_review_ids: list[str] = field(default_factory=list)
+    review_categories: list[str] = field(default_factory=lambda: ["Uncategorized"])
 
     def normalized_library_folder(self) -> Path:
         """Return the configured or default review library folder."""
@@ -51,6 +52,7 @@ class UserSettings:
             review_library_folder=str(data.get("review_library_folder", "")),
             default_template_id=str(data.get("default_template_id", "default_review")),
             recent_review_ids=[str(item) for item in data.get("recent_review_ids", [])],
+            review_categories=[str(item) for item in data.get("review_categories", ["Uncategorized"])],
         )
 
 
