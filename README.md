@@ -63,20 +63,21 @@ The final output only shows the selected rating value/name, for example:
 ```
 
 ## Screenshots
+<img width="526" height="449" alt="rating" src="https://github.com/user-attachments/assets/59a903c7-29cb-42f1-9a51-98202564352d" />
+## EASY RATING + EXPORT
+<img width="1402" height="881" alt="new" src="https://github.com/user-attachments/assets/281d7e65-1d95-4c56-aa88-e67fa155d9bd" />
+## Full UI
+<img width="381" height="628" alt="format" src="https://github.com/user-attachments/assets/b57707bc-5c4a-492f-b2e4-7236d34c9d80" />
+## Folders to organize ALL the reviews 
+<img width="731" height="615" alt="metadata" src="https://github.com/user-attachments/assets/f8772f9c-ac4f-471a-ad8f-096f9a9ab325" />
+## Expiremental Metadata remover. 
+<img width="838" height="693" alt="template" src="https://github.com/user-attachments/assets/981d3141-c400-428d-804d-24a2b2e63768" />
+## Switch up the Template^
+<img width="509" height="715" alt="listingtype" src="https://github.com/user-attachments/assets/db98374e-5ecd-4b78-a848-702821f0e8d9" />
+## Easy to choose Listing types as well as every other option
+<img width="728" height="359" alt="onion" src="https://github.com/user-attachments/assets/0736c3b6-a48f-4c60-bb76-74a58d74b602" />
+## Onion Image providers stored locally, ease of access.
 
-Screenshots are not committed yet. The first public release should include:
-
-- main split-screen editor
-- rating dropdown with recommendation text
-- rendered BBCode table preview
-- review library/search
-- settings dialog
-
-Recommended location:
-
-```text
-docs/images/
-```
 
 ## Requirements
 
