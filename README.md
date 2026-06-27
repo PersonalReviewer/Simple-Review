@@ -69,10 +69,10 @@ The final output only shows the selected rating value/name, for example:
 
 <img width="1402" height="881" alt="new" src="https://github.com/user-attachments/assets/281d7e65-1d95-4c56-aa88-e67fa155d9bd" />
 
+<img width="381" height="628" alt="format" src="https://github.com/user-attachments/assets/b57707bc-5c4a-492f-b2e4-7236d34c9d80" />
+
 <img width="441" height="790" alt="preview" src="https://github.com/user-attachments/assets/60539069-868c-4b39-959f-6b8991f97ac7" />
 
-
-<img width="381" height="628" alt="format" src="https://github.com/user-attachments/assets/b57707bc-5c4a-492f-b2e4-7236d34c9d80" />
 
 <img width="731" height="615" alt="metadata" src="https://github.com/user-attachments/assets/f8772f9c-ac4f-471a-ad8f-096f9a9ab325" />
 
