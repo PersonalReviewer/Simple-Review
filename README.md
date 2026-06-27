@@ -4,7 +4,9 @@ Review Studio is a desktop app for writing structured vendor/product reviews wit
 
 It gives you a form on the left, a live preview on the right, and a clean generated table output that can be copied or exported when the review is ready.
 
-The goal is simple: make reviews consistent, readable, backed up, and easier to write without turning the output into a mess.
+The goal is simple: I wanted to fix the amount of time each review would take, the handling of the bbcode, and the exporting process. This simplfies all and even can remove EXIF. Please consider checking out if you enjoy making indepth reviews.  
+
+## SCROLL DOWN FOR SCREEN SHOTS!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ## What it does
 
