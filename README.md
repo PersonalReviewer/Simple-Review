@@ -7,6 +7,11 @@ It gives you a form on the left, a live preview on the right, and a clean genera
 The goal is simple: I wanted to fix the amount of time each review would take, the handling of the bbcode, and the exporting process. This simplfies all and even can remove EXIF. Please consider checking out if you enjoy making indepth reviews.  
 
 ## SCROLL DOWN FOR SCREEN SHOTS!!!!!!!!!!!!!!!!!!!!!!!!!
+SHOUTOUT CHATGPT 
+
+<img width="75" height="35" alt="chatgpt" src="https://github.com/user-attachments/assets/697d03f4-0c86-457d-bf2b-1d16a6da27aa" />
+
+
 
 ## What it does
 
