@@ -29,6 +29,8 @@ SHOUTOUT CHATGPT
 - Lets you clone, edit, save, delete, and switch template profiles
 - Organizes reviews into collapsible local folders/categories
 - Optional experimental Imgur upload after metadata removal, disabled by default
+- NEW UPDATE. TRIP REPORTS! LIVE TRIP REPORTING.
+
 
 ## Current default review format
 
@@ -71,6 +73,11 @@ The final output only shows the selected rating value/name, for example:
 
 ## Screenshots
 <img width="526" height="449" alt="rating" src="https://github.com/user-attachments/assets/59a903c7-29cb-42f1-9a51-98202564352d" />
+
+<img width="132" height="38" alt="newtrip" src="https://github.com/user-attachments/assets/5b93563e-b2b4-4f01-b0a6-0bddb1599556" />
+<img width="502" height="152" alt="inthemomentlogging" src="https://github.com/user-attachments/assets/aa9223f0-9411-46cc-965d-dc9096b4c8c6" />
+<img width="415" height="201" alt="livetrip" src="https://github.com/user-attachments/assets/4003af9d-485d-4f8e-84a2-99ffdb5dd874" />
+
 
 <img width="1402" height="881" alt="new" src="https://github.com/user-attachments/assets/281d7e65-1d95-4c56-aa88-e67fa155d9bd" />
 
