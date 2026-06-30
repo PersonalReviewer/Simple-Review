@@ -125,6 +125,16 @@ class Review:
 
     def display_title(self) -> str:
         """Return a useful title for library/navigation views."""
+        if self.template_id == "default_trip_report":
+            substance = self.values.get("substance", "")
+            dosage = self.values.get("dosage", "")
+            time_val = self.values.get("start_time", "")
+            parts = [p.strip() for p in [substance, f"({dosage})" if dosage else "", f"@ {time_val}" if time_val else ""] if p.strip()]
+            if parts:
+                generated = " ".join(parts)
+                return f"{generated} Copy" if self.title.endswith(" Copy") else generated
+            return "Untitled Trip Report"
+
         vendor = self.values.get("vendor_name", self.vendor)
         product = self.values.get("product_name", self.product)
         parts = [part.strip() for part in [vendor, product] if part.strip()]
@@ -151,7 +161,7 @@ class Review:
             self.comments[key] = value
         else:
             self.values[key] = value
-        if key in {"vendor_name", "product_name"}:
+        if key in {"vendor_name", "product_name", "substance", "dosage", "start_time"}:
             self.title = self.display_title()
 
     def duplicate(self) -> Review:

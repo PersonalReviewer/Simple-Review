@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from review_studio.domain.models import Review
+from review_studio.domain.template_schema import FieldNamespace
 from review_studio.storage.repository import ReviewRepository
 from review_studio.storage.settings import SettingsStore, UserSettings
 
@@ -18,9 +19,21 @@ class ReviewService:
     def create_review(self) -> Review:
         """Create and persist a new empty review."""
         template_id = self.settings.default_template_id
-        if template_id == "default_bbcode":
+        if template_id == "default_bbcode" or template_id == "default_trip_report":
             template_id = "default_review"
         review = Review(template_id=template_id)
+        self.save_review(review)
+        return review
+
+    def create_trip_report(self) -> Review:
+        """Create and persist a new empty trip report."""
+        review = Review(template_id="default_trip_report", category="Trip Reports")
+        from datetime import datetime
+        now = datetime.now()
+        cur_date = now.strftime("%Y-%m-%d")
+        cur_time = now.strftime("%H:%M")
+        review.set_field_value(FieldNamespace.VALUE, "start_time", f"{cur_date} @ {cur_time}")
+        review.set_field_value(FieldNamespace.VALUE, "timeline_log", f"* **T+00:00** ({cur_time}) - [Ingestion] Dose administered.")
         self.save_review(review)
         return review
 

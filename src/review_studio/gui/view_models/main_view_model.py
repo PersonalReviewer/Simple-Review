@@ -59,6 +59,11 @@ class MainViewModel:
         self.current_review = self.review_service.create_review()
         return self.current_review
 
+    def create_trip_report(self) -> Review:
+        """Create and select a new trip report."""
+        self.current_review = self.review_service.create_trip_report()
+        return self.current_review
+
     def select_review(self, review_id: str) -> Review:
         """Load and select an existing review."""
         self.current_review = self.review_service.repository.load(review_id)
@@ -161,6 +166,13 @@ class MainViewModel:
 
     def _automatic_title(self) -> str:
         """Build the generated title used by the current form workflow."""
+        if self.current_review.template_id == "default_trip_report":
+            substance = self.current_review.values.get("substance", "")
+            dosage = self.current_review.values.get("dosage", "")
+            time_val = self.current_review.values.get("start_time", "")
+            parts = [p.strip() for p in [substance, f"({dosage})" if dosage else "", f"@ {time_val}" if time_val else ""] if p.strip()]
+            return " ".join(parts) if parts else "Untitled Trip Report"
+
         parts = [
             part.strip()
             for part in [

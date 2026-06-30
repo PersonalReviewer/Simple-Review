@@ -39,17 +39,36 @@ class ExportService:
 
     def render(self, review: Review, export_format: ExportFormat) -> str:
         """Render a review in the requested format."""
-        bbcode = self._template_engine.render(review)
-        if export_format is ExportFormat.BBCODE:
-            return bbcode
+        raw_or_bbcode = self._template_engine.render(review)
+        template = self._template_engine.get_template(review.template_id)
+        is_markdown = template.default_format == "markdown"
+
         if export_format is ExportFormat.JSON:
             return json.dumps(review.to_dict(), indent=2, ensure_ascii=False) + "\n"
+
+        if is_markdown:
+            if export_format in {ExportFormat.MARKDOWN, ExportFormat.TEXT, ExportFormat.BBCODE}:
+                return raw_or_bbcode
+            if export_format is ExportFormat.HTML:
+                import html
+                escaped = html.escape(raw_or_bbcode)
+                escaped = re.sub(r"^# (.*?)$", r"<h1>\1</h1>", escaped, flags=re.MULTILINE)
+                escaped = re.sub(r"^## (.*?)$", r"<h2>\1</h2>", escaped, flags=re.MULTILINE)
+                escaped = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", escaped)
+                return (
+                    "<!doctype html>\n<html lang=\"en\">\n<head>\n"
+                    "<meta charset=\"utf-8\">\n<title>Trip Report Export</title>\n</head>\n"
+                    f"<body>{escaped.replace(chr(10), '<br>')}</body>\n</html>\n"
+                )
+
+        if export_format is ExportFormat.BBCODE:
+            return raw_or_bbcode
         if export_format is ExportFormat.TEXT:
-            return self._bbcode_to_text(bbcode)
+            return self._bbcode_to_text(raw_or_bbcode)
         if export_format is ExportFormat.MARKDOWN:
-            return self._bbcode_to_markdown(bbcode)
+            return self._bbcode_to_markdown(raw_or_bbcode)
         if export_format is ExportFormat.HTML:
-            return self._bbcode_to_html(bbcode)
+            return self._bbcode_to_html(raw_or_bbcode)
         raise ExportError(f"Unsupported export format: {export_format.value}")
 
     def export_to_file(self, review: Review, export_format: ExportFormat, path: Path) -> ExportResult:

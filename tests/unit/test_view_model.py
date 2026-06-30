@@ -90,6 +90,28 @@ class ViewModelTests(unittest.TestCase):
             self.assertEqual(remaining_ids, {third_id})
             self.assertEqual(view_model.current_review.id, third_id)
 
+    def test_trip_report_creation_and_title(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            engine = TemplateEngine()
+            service = ReviewService(ReviewRepository(root / "reviews"), SettingsStore(root / "settings.json"))
+            view_model = MainViewModel(service, TemplateService(engine), ExportService(engine))
+
+            trip_report = view_model.create_trip_report()
+            fields = {field.identity: field for field in view_model.current_template.iter_fields()}
+
+            self.assertEqual(trip_report.template_id, "default_trip_report")
+            self.assertEqual(trip_report.category, "Trip Reports")
+
+            view_model.update_template_field(fields["value.substance"], "Psilocybin")
+            view_model.update_template_field(fields["value.dosage"], "3.5g")
+            view_model.update_template_field(fields["value.start_time"], "2026-06-30 @ 21:00")
+
+            self.assertEqual(trip_report.display_title(), "Psilocybin (3.5g) @ 2026-06-30 @ 21:00")
+            self.assertIn("Psilocybin", view_model.render_raw_preview())
+            self.assertIn("3.5g", view_model.render_raw_preview())
+            self.assertIn("2026-06-30 @ 21:00", view_model.render_raw_preview())
+
 
 if __name__ == "__main__":
     unittest.main()

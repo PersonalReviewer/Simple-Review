@@ -1,0 +1,176 @@
+{
+  "id": "default_trip_report",
+  "name": "Trip Report & Experience Log",
+  "version": "1.0",
+  "description": "Guided template for structured substance experience reporting with automatic live timeline logging capability.",
+  "default_format": "markdown",
+  "rating_options": [
+    {
+      "value": null,
+      "name": "N/A",
+      "color": "#999999",
+      "description": "Not applicable."
+    },
+    {
+      "value": 1,
+      "name": "Uneventful",
+      "color": "#999999",
+      "description": "No noticeable effects or plain baseline."
+    },
+    {
+      "value": 2,
+      "name": "Mild",
+      "color": "#5bc0de",
+      "description": "Light, subtle, easily ignored background effects."
+    },
+    {
+      "value": 3,
+      "name": "Moderate",
+      "color": "#5cb85c",
+      "description": "Clear effects, noticeable but comfortable and structured."
+    },
+    {
+      "value": 4,
+      "name": "Strong",
+      "color": "#f0ad4e",
+      "description": "Deep headspace, distinct visual or sensory changes, fully immersive."
+    },
+    {
+      "value": 5,
+      "name": "Overwhelming",
+      "color": "#d9534f",
+      "description": "Intense, extremely challenging to direct, heavy ego dissolution."
+    }
+  ],
+  "sections": [
+    {
+      "title": "Substance Meta-Information",
+      "fields": [
+        {
+          "key": "substance",
+          "label": "Substance Name",
+          "type": "text",
+          "required": true,
+          "placeholder": "e.g., LSD, Psilocybin Mushrooms, Ketamine"
+        },
+        {
+          "key": "dosage",
+          "label": "Dosage",
+          "type": "text",
+          "required": true,
+          "placeholder": "e.g., 150ug, 2.5g, 50mg"
+        },
+        {
+          "key": "roa",
+          "label": "Route of Administration",
+          "type": "select",
+          "options": [
+            "Oral",
+            "Sublingual / Buccal",
+            "Insufflated",
+            "Inhaled / Vaped",
+            "Intravenous",
+            "Intramuscular",
+            "Rectal",
+            "Transdermal"
+          ]
+        },
+        {
+          "key": "start_time",
+          "label": "Start Date / Time",
+          "type": "text",
+          "required": true,
+          "placeholder": "YYYY-MM-DD @ HH:MM"
+        },
+        {
+          "key": "set",
+          "label": "Set (Mindset)",
+          "type": "multiline",
+          "placeholder": "Current mindset, emotional baseline, and expectations..."
+        },
+        {
+          "key": "setting",
+          "label": "Setting (Environment)",
+          "type": "multiline",
+          "placeholder": "Setting description: location, lighting, music, trip sitters..."
+        },
+        {
+          "key": "prior_tolerance",
+          "label": "Prior Tolerance",
+          "type": "text",
+          "placeholder": "None / Baseline / Recent exposure notes"
+        }
+      ]
+    },
+    {
+      "title": "Subjective Effects Index",
+      "fields": [
+        {
+          "key": "visual_effects",
+          "label": "Visual Effects",
+          "type": "multiline",
+          "placeholder": "Double vision, enhancements, morphing, recursion, CEVs/OEVs..."
+        },
+        {
+          "key": "physical_effects",
+          "label": "Physical Effects",
+          "type": "multiline",
+          "placeholder": "Body load, tactile enhancement, heart rate, stimulation/sedation..."
+        },
+        {
+          "key": "cognitive_effects",
+          "label": "Cognitive Effects",
+          "type": "multiline",
+          "placeholder": "Headspace change, time distortion, anxiety, memory suppression, euphoria..."
+        }
+      ]
+    },
+    {
+      "title": "Timeline Log",
+      "fields": [
+        {
+          "key": "timeline_log",
+          "label": "Experience Timeline & Logging",
+          "type": "multiline",
+          "placeholder": "Automatic live entries from interactive widget add here, or write manually in this box."
+        }
+      ]
+    },
+    {
+      "title": "Conclusion & Takeaways",
+      "fields": [
+        {
+          "key": "main_lesson",
+          "label": "Main Lesson / Conclusion",
+          "type": "multiline",
+          "required": true,
+          "placeholder": "Summarize the primary takeaways, core insights, and overall integration lessons."
+        },
+        {
+          "key": "overall_rating",
+          "label": "Experience Rating",
+          "type": "select",
+          "options": [
+            "1/10 - Extremely negative",
+            "2/10 - Highly unpleasant",
+            "3/10 - Unpleasant",
+            "4/10 - Below average",
+            "5/10 - Neutral / Meh",
+            "6/10 - Slightly positive",
+            "7/10 - Positive",
+            "8/10 - Meaningful & educational",
+            "9/10 - Transformative",
+            "10/10 - Deeply profound / Life-changing"
+          ]
+        },
+        {
+          "key": "side_effects",
+          "label": "Side Effects & Hangover",
+          "type": "multiline",
+          "placeholder": "Comedown notes, next-day hangover, muscle tension, headaches, sleep issues..."
+        }
+      ]
+    }
+  ],
+  "body": "# {{ substance }} Experience Report: [Insert Title]\n\n## Meta Information\n* **Substance(s) Used:** {{ substance }}\n* **Dosage:** {{ dosage }}\n* **Route of Administration:** {{ roa }}\n* **Date / Start Time:** {{ start_time }}\n* **Set (Mindset):** {{ set }}\n* **Setting (Environment):** {{ setting }}\n* **Prior Tolerance:** {{ prior_tolerance }}\n\n---\n\n## Timeline & Log\n{{ timeline_log }}\n\n---\n\n## Subjective Effects Index\n* **Visual Effects:** {{ visual_effects }}\n* **Physical Effects (Body load, heart rate, stimulation):** {{ physical_effects }}\n* **Cognitive Effects (Headspace, anxiety, euphoria):** {{ cognitive_effects }}\n\n## Conclusion & Takeaways\n* **Main Lesson / Summary:** {{ main_lesson }}\n* **Rating (1-10):** {{ overall_rating }}\n* **Side Effects / Hangover:** {{ side_effects }}\n"
+}

@@ -68,6 +68,18 @@ class RenderStorageExportTests(unittest.TestCase):
         self.assertIn("<span style=\"color: #5bc0de; font-weight: 600;\"> 𝐀𝐃𝐕𝐀𝐍𝐂𝐄𝐃 </span>", exporter.render(review, ExportFormat.HTML))
         self.assertIn('"vendor": "Vendor"', exporter.render(review, ExportFormat.JSON))
 
+    def test_trip_report_export_formats(self) -> None:
+        review = Review(template_id="default_trip_report")
+        review.values["substance"] = "Acid"
+        review.values["dosage"] = "150ug"
+        review.values["start_time"] = "2026-06-30 @ 10:00"
+        review.values["timeline_log"] = "* T+00:00 Ingested"
+        exporter = ExportService(TemplateEngine())
+
+        self.assertIn("# Acid Experience Report", exporter.render(review, ExportFormat.MARKDOWN))
+        self.assertIn("150ug", exporter.render(review, ExportFormat.HTML))
+        self.assertIn("Acid", exporter.render(review, ExportFormat.TEXT))
+
 
 if __name__ == "__main__":
     unittest.main()

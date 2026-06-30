@@ -157,6 +157,10 @@ class MainWindow(QMainWindow):
         self.new_action.setShortcut(QKeySequence.StandardKey.New)
         self.new_action.triggered.connect(self._new_review)
 
+        self.new_trip_report_action = QAction("New Trip Report", self)
+        self.new_trip_report_action.setShortcut(QKeySequence("Ctrl+Shift+N"))
+        self.new_trip_report_action.triggered.connect(self._new_trip_report)
+
         self.exif_cleaner_action = QAction("Remove Image Metadata…", self)
         self.exif_cleaner_action.setShortcut(QKeySequence("Ctrl+Shift+M"))
         self.exif_cleaner_action.triggered.connect(self._open_exif_cleaner)
@@ -201,6 +205,7 @@ class MainWindow(QMainWindow):
         """Create the menu bar."""
         file_menu = self.menuBar().addMenu("File")
         file_menu.addAction(self.new_action)
+        file_menu.addAction(self.new_trip_report_action)
         file_menu.addAction(self.save_action)
         file_menu.addAction(self.export_action)
         file_menu.addSeparator()
@@ -228,6 +233,7 @@ class MainWindow(QMainWindow):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
         toolbar.addAction(self.new_action)
+        toolbar.addAction(self.new_trip_report_action)
         toolbar.addAction(self.save_action)
         toolbar.addAction(self.duplicate_action)
         toolbar.addAction(self.copy_action)
@@ -268,15 +274,22 @@ class MainWindow(QMainWindow):
 
         new_button = QPushButton("Create Review")
         new_button.clicked.connect(self._new_review)
+        new_trip_report_button = QPushButton("Create Trip Report")
+        new_trip_report_button.clicked.connect(self._new_trip_report)
         duplicate_button = QPushButton("Duplicate")
         duplicate_button.clicked.connect(self._duplicate_review)
         delete_button = QPushButton("Delete")
         delete_button.clicked.connect(self._delete_review)
 
-        buttons = QHBoxLayout()
-        buttons.addWidget(new_button)
-        buttons.addWidget(duplicate_button)
-        buttons.addWidget(delete_button)
+        buttons = QVBoxLayout()
+        top_row = QHBoxLayout()
+        top_row.addWidget(new_button)
+        top_row.addWidget(new_trip_report_button)
+        bottom_row = QHBoxLayout()
+        bottom_row.addWidget(duplicate_button)
+        bottom_row.addWidget(delete_button)
+        buttons.addLayout(top_row)
+        buttons.addLayout(bottom_row)
 
         container = QWidget()
         layout = QVBoxLayout(container)
@@ -313,10 +326,116 @@ class MainWindow(QMainWindow):
         self._rating_guidance_labels.clear()
         for section in self.view_model.current_template.sections:
             form_layout.addWidget(self._build_template_section_group(section.title, section.fields))
+        if self.view_model.current_template.id == "default_trip_report":
+            form_layout.addWidget(self._build_interactive_timeline_logger_group())
         form_layout.addStretch(1)
         scroll.setWidget(form_container)
         layout.addWidget(scroll, 1)
         return container
+
+    def _build_interactive_timeline_logger_group(self) -> QGroupBox:
+        """Create a dedicated group box with interactive live-timeline logging helpers."""
+        group = QGroupBox("Interactive Timeline Logger")
+        vbox = QVBoxLayout(group)
+
+        help_label = QLabel(
+            "🚀 <b>Live Logging Mode</b>: Keep this app open during your experience. Type a state change/journal entry under 'Entry' below and hit Enter (or click Log Entry). The app calculates elapsed time from your 'Start Date / Time' and automatically appends to the timeline log field."
+        )
+        help_label.setWordWrap(True)
+        help_label.setStyleSheet("color: #a5b4fc; font-size: 11px;")
+        layout_row = QHBoxLayout()
+
+        entry_label = QLabel("✨ Entry:")
+        self.timeline_entry_input = QLineEdit()
+        self.timeline_entry_input.setPlaceholderText("Type what you are experiencing now...")
+        self.timeline_entry_input.returnPressed.connect(self._add_live_timeline_entry)
+
+        log_button = QPushButton("Log Entry")
+        log_button.clicked.connect(self._add_live_entry_action)
+
+        layout_row.addWidget(entry_label)
+        layout_row.addWidget(self.timeline_entry_input, 1)
+        layout_row.addWidget(log_button)
+
+        vbox.addWidget(help_label)
+        vbox.addLayout(layout_row)
+        return group
+
+    def _add_live_entry_action(self) -> None:
+        self._add_live_timeline_entry()
+
+    def _add_live_timeline_entry(self) -> None:
+        """Parse start_time, calculate T+ delta, append entry line to timeline_log, and clear input."""
+        entry_text = self.timeline_entry_input.text().strip()
+        if not entry_text:
+            return
+
+        import re
+        from datetime import datetime
+
+        now = datetime.now()
+
+        # Read start_time from the start_time line edit widget If available
+        start_widget = self._field_widgets.get("value.start_time")
+        start_time_text = start_widget.text().strip() if isinstance(start_widget, QLineEdit) else ""
+
+        start_datetime = None
+        if start_time_text:
+            match = re.search(r"(\d{4})[-/](\d{2})[-/](\d{2})\s*@\s*(\d{2}):(\d{2})", start_time_text)
+            if match:
+                try:
+                    start_datetime = datetime(
+                        int(match.group(1)),
+                        int(match.group(2)),
+                        int(match.group(3)),
+                        int(match.group(4)),
+                        int(match.group(5))
+                    )
+                except ValueError:
+                    pass
+            else:
+                match = re.search(r"(\d{2}):(\d{2})", start_time_text)
+                if match:
+                    try:
+                        start_datetime = datetime(
+                            now.year, now.month, now.day,
+                            int(match.group(1)),
+                            int(match.group(2))
+                        )
+                    except ValueError:
+                        pass
+
+        if start_datetime is None:
+            start_datetime = now
+            cur_date = now.strftime("%Y-%m-%d")
+            cur_time = now.strftime("%H:%M")
+            if isinstance(start_widget, QLineEdit):
+                start_widget.setText(f"{cur_date} @ {cur_time}")
+                self._update_template_field(start_widget.toolTip(), f"{cur_date} @ {cur_time}")
+
+        total_seconds = int((now - start_datetime).total_seconds())
+        is_negative = total_seconds < 0
+        abs_seconds = abs(total_seconds)
+        hours = abs_seconds // 3600
+        minutes = (abs_seconds % 3600) // 60
+        sign = "-" if is_negative else "+"
+        t_format = f"T{sign}{hours:02d}:{minutes:02d}"
+
+        clock_time = now.strftime("%H:%M")
+        entry_line = f"* **{t_format}** ({clock_time}) - {entry_text}"
+
+        log_widget = self._field_widgets.get("value.timeline_log")
+        if isinstance(log_widget, QTextEdit):
+            current_log = log_widget.toPlainText().strip()
+            if current_log:
+                new_log = f"{current_log}\n{entry_line}"
+            else:
+                new_log = entry_line
+            log_widget.setPlainText(new_log)
+
+        self.timeline_entry_input.clear()
+        self.timeline_entry_input.setFocus()
+        self.statusBar().showMessage(f"Log appended: {t_format} - {entry_text}", 2000)
 
     def _build_template_section_group(self, title: str, fields: tuple[TemplateField, ...]) -> QGroupBox:
         """Create a form section from template metadata."""
@@ -475,7 +594,10 @@ class MainWindow(QMainWindow):
         try:
             raw = self.view_model.render_raw_preview()
             self.raw_preview.setPlainText(raw)
-            self.rendered_preview.setHtml(self.preview_renderer.bbcode_to_html(raw))
+            if self.view_model.current_review.template_id == "default_trip_report":
+                self.rendered_preview.setHtml(self.preview_renderer.markdown_to_html(raw))
+            else:
+                self.rendered_preview.setHtml(self.preview_renderer.bbcode_to_html(raw))
             messages = self.view_model.validation_messages()
             self.validation_label.setText("Validation: " + " | ".join(messages) if messages else "Validation: OK")
             self.setWindowTitle(f"Review Studio — {self.view_model.current_review.display_title()}")
@@ -644,7 +766,10 @@ class MainWindow(QMainWindow):
             return
         self._autosave()
         try:
+            old_template_id = self.view_model.current_review.template_id
             review = self.view_model.select_review(review_id)
+            if review.template_id != old_template_id:
+                self._build_central_editor()
             self._populate_form(review)
             self._refresh_preview(save=False)
         except Exception as exc:
@@ -693,6 +818,20 @@ class MainWindow(QMainWindow):
         self._autosave()
         review = self.view_model.create_review()
         self._library_selected_review_ids = [review.id]
+        self._build_central_editor()
+        self._populate_form(review)
+        self._refresh_library(select_current=True)
+        self._refresh_preview(save=False)
+        first_widget = next(iter(self._field_widgets.values()), None)
+        if first_widget is not None:
+            first_widget.setFocus()
+
+    def _new_trip_report(self) -> None:
+        """Create a new trip report and focus the first field."""
+        self._autosave()
+        review = self.view_model.create_trip_report()
+        self._library_selected_review_ids = [review.id]
+        self._build_central_editor()
         self._populate_form(review)
         self._refresh_library(select_current=True)
         self._refresh_preview(save=False)
